@@ -4,85 +4,122 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>IMS Call Flow — C-DOT IMS Solution</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg:      #f0f4f8;
-  --surface: #ffffff;
-  --border:  #dde3ea;
-  --text:    #1e293b;
-  --muted:   #64748b;
-  --code:    #f8fafc;
+  --bg:    #f4f1ea;
+  --paper: #fbf9f4;
+  --ink:   #1a1a1a;
+  --muted: #5a5147;
+  --rule:  #1a1a1a;
+  --grid:  rgba(26,26,26,.06);
+
+  --accent:  #b91c1c;
+  --accent2: #1e40af;
+  --accent3: #15803d;
+  --accent4: #b45309;
+
+  --serif: 'Fraunces', Georgia, serif;
+  --sans:  'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --mono:  'JetBrains Mono', 'Courier New', monospace;
 
   /* phase accent colours */
-  --reg:   #d97706;
-  --setup: #2563eb;
-  --prog:  #ea580c;
-  --ans:   #16a34a;
-  --bye:   #dc2626;
+  --reg:   #b45309;
+  --setup: #1e40af;
+  --prog:  #be185d;
+  --ans:   #15803d;
+  --bye:   #b91c1c;
 
   /* SIP message colours */
-  --m-register: #b45309;
-  --m-invite:   #1d4ed8;
-  --m-trying:   #94a3b8;
-  --m-progress: #c2410c;
-  --m-ringing:  #c2410c;
+  --m-register: #b91c1c;
+  --m-invite:   #1e40af;
+  --m-trying:   #1a1a1a;
+  --m-progress: #b45309;
+  --m-ringing:  #b45309;
   --m-ok:       #15803d;
-  --m-auth:     #dc2626;
-  --m-ack:      #6d28d9;
-  --m-prack:    #6d28d9;
-  --m-update:   #0369a1;
-  --m-bye:      #dc2626;
-  --m-cx:       #be185d;
-  --m-note:     #475569;
+  --m-auth:     #7f1d1d;
+  --m-ack:      #5b21b6;
+  --m-prack:    #5b21b6;
+  --m-update:   #0f766e;
+  --m-bye:      #7f1d1d;
+  --m-cx:       #5b21b6;
+  --m-note:     #5a5147;
 }
 
 *{box-sizing:border-box;margin:0;padding:0;}
-html{scroll-behavior:smooth;}
+html{
+  scroll-behavior:smooth;
+  background:var(--bg);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size:24px 24px;
+}
 
 body{
-  background:var(--bg);
-  color:var(--text);
-  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-  font-size:14px;
-  line-height:1.65;
+  max-width:1280px;
+  margin:0 auto;
+  min-height:100vh;
+  background:var(--paper);
+  border-left:1px solid var(--rule);
+  border-right:1px solid var(--rule);
+  border-top:6px solid var(--ink);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:15px;
+  line-height:1.6;
 }
 
 /* ── HEADER ── */
 header{
-  background:#fff;
-  border-bottom:3px solid var(--setup);
-  padding:28px 40px 20px;
+  background:var(--paper);
+  border-bottom:2px solid var(--ink);
+  padding:40px 40px 24px;
+}
+.doc-meta{
+  display:flex;
+  justify-content:space-between;
+  gap:12px 24px;
+  flex-wrap:wrap;
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:16px;
 }
 header h1{
-  font-size:1.65rem;
-  font-weight:700;
-  color:#0f172a;
-  letter-spacing:-.3px;
+  font-family:var(--serif);
+  font-size:46px;
+  line-height:1.05;
+  font-weight:800;
+  letter-spacing:-.02em;
+  color:var(--ink);
 }
-header .sub{
-  color:var(--muted);
-  font-size:.85rem;
-  margin-top:4px;
-}
-.badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+header h1 .accent{color:var(--accent);font-style:italic;}
+.badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px;}
 .badge{
-  font-size:.72rem;
-  font-weight:600;
-  padding:3px 10px;
-  border-radius:20px;
-  letter-spacing:.3px;
-  border:1.5px solid;
+  font-family:var(--mono);
+  font-size:10px;
+  font-weight:500;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  padding:4px 10px;
+  border-radius:2px;
+  border:1px solid;
 }
-.b-green {color:#15803d;border-color:#86efac;background:#f0fdf4;}
-.b-blue  {color:#1d4ed8;border-color:#93c5fd;background:#eff6ff;}
-.b-amber {color:#b45309;border-color:#fcd34d;background:#fffbeb;}
-.b-red   {color:#b91c1c;border-color:#fca5a5;background:#fef2f2;}
+.b-green {color:#15803d;border-color:rgba(21,128,61,.45); background:rgba(21,128,61,.07);}
+.b-blue  {color:#1e40af;border-color:rgba(30,64,175,.45); background:rgba(30,64,175,.07);}
+.b-amber {color:#b45309;border-color:rgba(180,83,9,.45);  background:rgba(180,83,9,.07);}
+.b-red   {color:#b91c1c;border-color:rgba(185,28,28,.45); background:rgba(185,28,28,.07);}
 
 /* ── STICKY NAV ── */
 nav{
   position:sticky;top:0;z-index:50;
-  background:#fff;
-  border-bottom:1px solid var(--border);
+  background:var(--paper);
+  border-bottom:1px solid var(--ink);
   padding:0 40px;
   display:flex;
   align-items:center;
@@ -91,159 +128,237 @@ nav{
 }
 nav a{
   display:inline-block;
-  padding:10px 14px;
-  font-size:.78rem;
-  font-weight:600;
+  padding:12px 12px;
+  font-family:var(--mono);
+  font-size:10.5px;
+  font-weight:500;
+  letter-spacing:.08em;
+  text-transform:uppercase;
   color:var(--muted);
   text-decoration:none;
   border-bottom:2px solid transparent;
   white-space:nowrap;
-  transition:all .15s;
+  transition:color .15s, border-color .15s;
 }
-nav a:hover{color:var(--setup);border-bottom-color:var(--setup);}
-nav .sep{color:var(--border);margin:0 2px;user-select:none;}
+nav a:hover{color:var(--accent);border-bottom-color:var(--accent);}
+nav .sep{color:rgba(26,26,26,.25);margin:0 2px;user-select:none;font-family:var(--mono);}
 
 /* ── LAYOUT ── */
-.container{max-width:1180px;margin:0 auto;padding:32px 32px 60px;}
+.container{padding:40px 40px 64px;}
 
 /* ── NODE GRID ── */
 .section-label{
-  font-size:.7rem;
+  font-family:var(--mono);
+  font-size:12px;
   font-weight:700;
-  letter-spacing:1.5px;
+  letter-spacing:.15em;
   text-transform:uppercase;
   color:var(--muted);
-  margin:32px 0 12px;
+  margin:24px 0 14px;
   padding-bottom:8px;
-  border-bottom:1px solid var(--border);
+  border-bottom:1px solid var(--ink);
 }
 .node-grid{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(190px,1fr));
-  gap:10px;
-  margin-bottom:36px;
+  gap:12px;
+  margin-bottom:40px;
 }
 .node-card{
-  background:#fff;
-  border:1px solid var(--border);
-  border-radius:8px;
-  padding:12px 14px;
-  border-left:4px solid;
+  background:var(--paper);
+  border:1px solid var(--ink);
+  border-top:3px solid;
+  border-radius:2px;
+  padding:14px 14px 12px;
 }
-.node-card .nc-name{font-weight:700;font-size:.9rem;}
-.node-card .nc-ip  {font-family:'Courier New',monospace;font-size:.76rem;color:var(--muted);margin-top:2px;}
-.node-card .nc-role{font-size:.76rem;color:var(--muted);margin-top:5px;font-style:italic;}
-.n-ue   {border-color:#22c55e;} .n-ue    .nc-name{color:#16a34a;}
-.n-pc   {border-color:#60a5fa;} .n-pc    .nc-name{color:#2563eb;}
-.n-ic   {border-color:#fbbf24;} .n-ic    .nc-name{color:#d97706;}
-.n-sc   {border-color:#34d399;} .n-sc    .nc-name{color:#059669;}
-.n-tas  {border-color:#c084fc;} .n-tas   .nc-name{color:#7c3aed;}
-.n-hss  {border-color:#f472b6;} .n-hss   .nc-name{color:#be185d;}
-.n-annc {border-color:#fb923c;} .n-annc  .nc-name{color:#ea580c;}
+.node-card .nc-name{
+  font-family:var(--mono);
+  font-weight:700;
+  font-size:12px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.node-card .nc-ip  {font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:3px;}
+.node-card .nc-role{font-size:12px;color:var(--muted);margin-top:6px;font-style:italic;line-height:1.55;}
+.n-ue   {border-top-color:#1e40af;} .n-ue    .nc-name{color:#1e40af;}
+.n-pc   {border-top-color:#b45309;} .n-pc    .nc-name{color:#b45309;}
+.n-ic   {border-top-color:#0e7490;} .n-ic    .nc-name{color:#0e7490;}
+.n-sc   {border-top-color:#7c2d12;} .n-sc    .nc-name{color:#7c2d12;}
+.n-tas  {border-top-color:#be185d;} .n-tas   .nc-name{color:#be185d;}
+.n-hss  {border-top-color:#5b21b6;} .n-hss   .nc-name{color:#5b21b6;}
+.n-annc {border-top-color:#0f766e;} .n-annc  .nc-name{color:#0f766e;}
 
 /* ── PHASE BLOCK ── */
 .phase{
-  background:#fff;
-  border:1px solid var(--border);
-  border-radius:10px;
-  margin-bottom:32px;
+  background:var(--paper);
+  border:1px solid var(--ink);
+  border-radius:2px;
+  box-shadow:6px 6px 0 var(--ink);
+  margin-bottom:48px;
   overflow:hidden;
 }
 .phase-hdr{
   padding:14px 20px;
   display:flex;
   align-items:center;
-  gap:12px;
-  border-bottom:1px solid var(--border);
+  gap:14px;
+  flex-wrap:wrap;
+  border-bottom:1px solid var(--ink);
 }
 .phase-num{
-  font-size:.68rem;font-weight:700;letter-spacing:1px;
-  padding:3px 10px;border-radius:20px;border:1.5px solid;
+  font-family:var(--mono);
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.15em;
+  padding:3px 9px;
+  border-radius:2px;
+  border:1px solid;
+  background:var(--paper);
   white-space:nowrap;
 }
-.phase-title{font-size:.95rem;font-weight:700;}
-.phase-src  {font-size:.74rem;color:var(--muted);margin-left:auto;font-family:monospace;}
+.phase-title{
+  font-family:var(--serif);
+  font-size:19px;
+  font-weight:600;
+  letter-spacing:-.01em;
+}
+.phase-src{
+  font-family:var(--mono);
+  font-size:10.5px;
+  letter-spacing:.04em;
+  color:var(--muted);
+  margin-left:auto;
+}
 
-.ph-reg  .phase-hdr{background:#fffbeb;}
-.ph-reg  .phase-num{color:var(--reg);  border-color:var(--reg);  background:#fef9c3;}
-.ph-reg  .phase-title{color:#92400e;}
-.ph-setup.phase-hdr{background:#eff6ff;}
-.ph-setup.phase-num{color:var(--setup);border-color:var(--setup);background:#dbeafe;}
-.ph-setup.phase-title{color:#1e40af;}
-.ph-prog .phase-hdr{background:#fff7ed;}
-.ph-prog .phase-num{color:var(--prog); border-color:var(--prog); background:#ffedd5;}
-.ph-prog .phase-title{color:#9a3412;}
-.ph-ans  .phase-hdr{background:#f0fdf4;}
-.ph-ans  .phase-num{color:var(--ans);  border-color:var(--ans);  background:#dcfce7;}
-.ph-ans  .phase-title{color:#14532d;}
-.ph-bye  .phase-hdr{background:#fef2f2;}
-.ph-bye  .phase-num{color:var(--bye);  border-color:var(--bye);  background:#fee2e2;}
-.ph-bye  .phase-title{color:#991b1b;}
+.phase-hdr.ph-reg  {background:#fef3c7;}
+.phase-hdr.ph-reg   .phase-num{color:var(--reg);  border-color:var(--reg);}
+.phase-hdr.ph-reg   .phase-title{color:#7c2d12;}
+.phase-hdr.ph-setup{background:#dbeafe;}
+.phase-hdr.ph-setup .phase-num{color:var(--setup);border-color:var(--setup);}
+.phase-hdr.ph-setup .phase-title{color:#1e3a8a;}
+.phase-hdr.ph-prog {background:#fce7f3;}
+.phase-hdr.ph-prog  .phase-num{color:var(--prog); border-color:var(--prog);}
+.phase-hdr.ph-prog  .phase-title{color:#831843;}
+.phase-hdr.ph-ans  {background:#dcfce7;}
+.phase-hdr.ph-ans   .phase-num{color:var(--ans);  border-color:var(--ans);}
+.phase-hdr.ph-ans   .phase-title{color:#14532d;}
+.phase-hdr.ph-bye  {background:#fee2e2;}
+.phase-hdr.ph-bye   .phase-num{color:var(--bye);  border-color:var(--bye);}
+.phase-hdr.ph-bye   .phase-title{color:#7f1d1d;}
 
 /* ── HINGLISH BOX ── */
 .hinglish{
-  padding:14px 20px;
-  background:#f8fafc;
-  border-bottom:1px solid var(--border);
-  font-size:.84rem;
-  color:#334155;
-  line-height:1.8;
+  padding:18px 24px;
+  background:var(--paper);
+  border-bottom:1px solid var(--ink);
+  font-size:14.5px;
+  color:var(--ink);
+  line-height:1.75;
 }
-.hinglish b{color:#0f172a;}
+.hinglish b{color:var(--ink);font-weight:600;}
 .hi{
   display:inline-block;
-  font-weight:600;
-  padding:0 6px;
-  border-radius:3px;
-  font-size:.78rem;
+  font-family:var(--mono);
+  font-weight:700;
+  padding:1px 7px;
+  border-radius:2px;
+  font-size:11px;
+  letter-spacing:.04em;
   margin-right:2px;
 }
-.hi-reg  {background:#fef9c3;color:#92400e;}
-.hi-blue {background:#dbeafe;color:#1e40af;}
-.hi-grn  {background:#dcfce7;color:#14532d;}
-.hi-red  {background:#fee2e2;color:#991b1b;}
-.hi-pur  {background:#f3e8ff;color:#6b21a8;}
-.hi-org  {background:#ffedd5;color:#9a3412;}
+.hi-reg  {background:rgba(180,83,9,.12); color:#b45309;}
+.hi-blue {background:rgba(30,64,175,.10);color:#1e40af;}
+.hi-grn  {background:rgba(21,128,61,.12);color:#15803d;}
+.hi-red  {background:rgba(185,28,28,.10);color:#b91c1c;}
+.hi-pur  {background:rgba(91,33,182,.10);color:#5b21b6;}
+.hi-org  {background:rgba(124,45,18,.10);color:#7c2d12;}
 
 /* ── DIAGRAM ── */
-.diagram-wrap{overflow-x:auto;padding:16px 20px 20px;}
-svg.flow{display:block;font-family:'Courier New',monospace;}
+.diagram-wrap{overflow-x:auto;padding:24px 20px;}
+svg.flow{display:block;font-family:var(--mono);}
 
 /* ── LEGEND ── */
-.legend-grid{
-  display:flex;flex-wrap:wrap;gap:10px 20px;
-  padding:16px 20px;
-  background:#f8fafc;
-  border-top:1px solid var(--border);
-  border-radius:0 0 10px 10px;
+.legend-hdr-label{
+  font-family:var(--mono);
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.15em;
+  text-transform:uppercase;
+  color:var(--muted);
 }
-.leg-item{display:flex;align-items:center;gap:6px;font-size:.78rem;}
-.leg-line{width:32px;height:2px;border-radius:1px;}
-.leg-label{color:var(--text);}
+.legend-grid{
+  display:flex;flex-wrap:wrap;gap:10px;
+  padding:16px 20px;
+  background:var(--paper);
+}
+.leg-item{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 12px;
+  border:1px solid rgba(26,26,26,.2);
+  border-radius:2px;
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:.04em;
+}
+.leg-line{width:26px;height:3px;border-radius:1px;flex-shrink:0;}
+.leg-label{color:var(--ink);}
 
 /* ── KEY FACTS TABLE ── */
 .facts{
   width:100%;border-collapse:collapse;
-  font-size:.82rem;margin:12px 0 0;
+  font-size:13.5px;margin:12px 0 0;
 }
 .facts th{
-  background:#f1f5f9;color:var(--muted);
-  font-weight:600;font-size:.7rem;letter-spacing:.5px;text-transform:uppercase;
-  padding:7px 12px;text-align:left;border-bottom:1px solid var(--border);
+  background:var(--ink);color:var(--paper);
+  font-family:var(--mono);
+  font-weight:500;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  padding:9px 14px;text-align:left;
 }
 .facts td{
-  padding:7px 12px;border-bottom:1px solid #f1f5f9;
+  padding:11px 14px;
+  border-bottom:1px solid rgba(26,26,26,.12);
   vertical-align:top;
 }
 .facts tr:last-child td{border-bottom:none;}
-.facts .fc{font-family:monospace;font-size:.8rem;}
+.facts .fc{
+  font-family:var(--mono);
+  font-size:.85em;
+  color:var(--accent2);
+  background:rgba(30,64,175,.08);
+  padding:1px 5px;
+  border-radius:3px;
+}
 
 /* ── FOOTER ── */
 footer{
-  text-align:center;padding:24px;
-  font-size:.78rem;color:var(--muted);
-  border-top:1px solid var(--border);
-  background:#fff;
+  text-align:center;
+  padding:24px 32px 40px;
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:.05em;
+  line-height:1.9;
+  color:var(--muted);
+  border-top:2px solid var(--ink);
+  background:var(--paper);
+}
+
+/* ── PRINT ── */
+@media print{
+  html{background:#fff;}
+  body{border:none;max-width:none;}
+  .phase{box-shadow:none;page-break-inside:avoid;}
+  nav{display:none;}
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width:740px){
+  header{padding:28px 20px 20px;}
+  header h1{font-size:32px;}
+  nav{padding:0 20px;}
+  .container{padding:24px 16px 48px;}
+  .phase{box-shadow:4px 4px 0 var(--ink);}
+  .phase-src{margin-left:0;flex-basis:100%;}
+  .hinglish{padding:16px 18px;}
 }
 </style>
 </head>
@@ -251,8 +366,11 @@ footer{
 
 <!-- ═══ HEADER ═══ -->
 <header>
-  <h1>IMS Call Flow Diagram</h1>
-  <div class="sub">C-DOT IMS Solution (July 2024) &nbsp;·&nbsp; Wireshark-Verified &nbsp;·&nbsp; UE1 ↔ UE2 (4G VoLTE)</div>
+  <div class="doc-meta">
+    <span>C-DOT IMS Solution · July 2024</span>
+    <span>Wireshark-Verified · UE1 ↔ UE2 · 4G VoLTE</span>
+  </div>
+  <h1>IMS <span class="accent">Call Flow</span> Diagram</h1>
   <div class="badges">
     <span class="badge b-green">✓ Wireshark Verified</span>
     <span class="badge b-blue">3GPP TS 23.228</span>
@@ -480,8 +598,8 @@ footer{
 
 <!-- ═══ LEGEND ═══ -->
 <div class="phase" style="margin-top:8px;">
-  <div class="phase-hdr" style="background:#f8fafc;">
-    <span style="font-size:.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);">Message Type Legend</span>
+  <div class="phase-hdr">
+    <span class="legend-hdr-label">Message Type Legend</span>
   </div>
   <div class="legend-grid">
     <div class="leg-item"><div class="leg-line" style="background:var(--m-register)"></div><span class="leg-label">REGISTER</span></div>
@@ -514,11 +632,11 @@ footer{
 
 /* ── colours ── */
 const C = {
-  register:'#b45309', invite:'#1d4ed8', trying:'#94a3b8',
-  progress:'#c2410c', ringing:'#c2410c', ok:'#15803d',
-  auth:'#dc2626',     ack:'#6d28d9',    prack:'#6d28d9',
-  update:'#0369a1',   bye:'#dc2626',    cx:'#be185d',
-  annc:'#ea580c',
+  register:'#b91c1c', invite:'#1e40af', trying:'#1a1a1a',
+  progress:'#b45309', ringing:'#b45309', ok:'#15803d',
+  auth:'#7f1d1d',     ack:'#5b21b6',    prack:'#5b21b6',
+  update:'#0f766e',   bye:'#7f1d1d',    cx:'#5b21b6',
+  annc:'#0f766e',
 };
 
 /* ── layout constants ── */
@@ -533,9 +651,9 @@ function colX(i){ return MARGIN + i * COL_W + COL_W / 2; }
 
 /* node colour map */
 const NODE_CLR = {
-  UE:'#16a34a', UE1:'#16a34a', UE2:'#16a34a',
-  PCSCF:'#2563eb', ICSCF:'#d97706', SCSCF:'#059669',
-  TAS:'#7c3aed', HSS:'#be185d', ANNC:'#ea580c',
+  UE:'#1e40af', UE1:'#1e40af', UE2:'#1e40af',
+  PCSCF:'#b45309', ICSCF:'#0e7490', SCSCF:'#7c2d12',
+  TAS:'#be185d', HSS:'#5b21b6', ANNC:'#0f766e',
 };
 
 /* ─────────────────────────────────────────────
@@ -575,37 +693,45 @@ function makeSVG(svgId, colDefs, rows) {
   let nodes = '';
   colDefs.forEach((col, i) => {
     const cx  = colX(i);
-    const clr = col.color || NODE_CLR[col.id] || '#64748b';
+    const clr = col.color || NODE_CLR[col.id] || '#5a5147';
     const BW = 112, BH = 56;
     const bx  = cx - BW / 2;
     nodes += `
-      <rect x="${bx}" y="6" width="${BW}" height="${BH}" rx="7"
-        fill="#fff" stroke="${clr}" stroke-width="2"/>
+      <rect x="${bx}" y="6" width="${BW}" height="${BH}" rx="2"
+        fill="${clr}"/>
       <text x="${cx}" y="29" text-anchor="middle"
-        font-size="13" font-weight="700" fill="${clr}">${col.label}</text>
+        font-size="13" font-weight="700" fill="#fbf9f4">${col.label}</text>
       <text x="${cx}" y="47" text-anchor="middle"
-        font-size="9" fill="#94a3b8">${col.sub || ''}</text>
+        font-size="9" fill="#fbf9f4" opacity="0.75">${col.sub || ''}</text>
       <line x1="${cx}" y1="${6 + BH}" x2="${cx}" y2="${H - 8}"
-        stroke="#cbd5e0" stroke-width="1.5" stroke-dasharray="6 4"/>`;
+        stroke="#1a1a1a" stroke-width="1" stroke-dasharray="3 3" opacity="0.4"/>`;
   });
 
   /* messages */
   let msgs = '';
   let y     = HDR_H;
-  let msgIdx = 0;
 
   rows.forEach(row => {
     if (row.type === 'note') {
-      const color = row.color || '#64748b';
-      /* colored left bar + tinted background for note rows */
-      msgs += `
-        <rect x="0" y="${y}" width="${W}" height="${NOTE_H}" fill="${color}13"/>
-        <rect x="0" y="${y}" width="3" height="${NOTE_H}" fill="${color}" opacity="0.5"/>
-        <line x1="0" y1="${y + NOTE_H}" x2="${W}" y2="${y + NOTE_H}"
-          stroke="#e2e8f0" stroke-width="1"/>
-        <text x="${MARGIN + 10}" y="${y + NOTE_H / 2 + 4}"
-          font-size="10.5" fill="${color}" font-weight="500"
-          font-family="-apple-system,sans-serif">${escXML(row.label)}</text>`;
+      const color = row.color || '#5a5147';
+      /* banner notes (── … ──) get a solid-stroke tinted band;
+         plain annotations get a dashed-stroke band with italic text */
+      const isBanner = String(row.label).trim().startsWith('─');
+      if (isBanner) {
+        msgs += `
+          <rect x="6" y="${y + 3}" width="${W - 12}" height="${NOTE_H - 6}" rx="2"
+            fill="${color}14" stroke="${color}" stroke-width="1.2"/>
+          <text x="${MARGIN + 10}" y="${y + NOTE_H / 2 + 4}"
+            font-size="10" font-weight="700" letter-spacing="1"
+            fill="${color}">${escXML(row.label)}</text>`;
+      } else {
+        msgs += `
+          <rect x="6" y="${y + 3}" width="${W - 12}" height="${NOTE_H - 6}" rx="2"
+            fill="${color}0d" stroke="${color}" stroke-width="1" stroke-dasharray="3 2"/>
+          <text x="${MARGIN + 10}" y="${y + NOTE_H / 2 + 4}"
+            font-size="10" font-style="italic"
+            fill="${color}">${escXML(row.label)}</text>`;
+      }
       y += NOTE_H;
       return;
     }
@@ -613,16 +739,10 @@ function makeSVG(svgId, colDefs, rows) {
     const fi = row.from, ti = row.to;
     if (fi === undefined || ti === undefined) { y += ROW_H; return; }
 
-    /* zebra stripe */
-    if (msgIdx % 2 === 0) {
-      msgs += `<rect x="0" y="${y}" width="${W}" height="${ROW_H}" fill="#f8fafc"/>`;
-    }
-    msgIdx++;
-
     const x1    = colX(fi);
     const x2    = colX(ti);
     const right = x2 > x1;
-    const clr   = C[row.type] || '#94a3b8';
+    const clr   = C[row.type] || '#5a5147';
 
     /* label sits in the TOP of the row; arrow in the LOWER portion */
     const lblY = y + 6;            // label rect top
@@ -637,7 +757,7 @@ function makeSVG(svgId, colDefs, rows) {
       stroke="${clr}" stroke-width="2"
       marker-end="url(#ah-${row.type})"/>`;
 
-    /* label box — white background covers the dashed lifelines it passes
+    /* label box — paper background covers the dashed lifelines it passes
        over, keeping labels readable; width capped at SVG bounds            */
     const lbl  = escXML(row.label);
     const lblW = Math.min(lbl.length * 6.4 + 18, W - 8);
@@ -645,11 +765,11 @@ function makeSVG(svgId, colDefs, rows) {
     const lblX = Math.max(4, Math.min(mid - lblW / 2, W - lblW - 4));
 
     msgs += `
-      <rect x="${lblX}" y="${lblY}" width="${lblW}" height="17" rx="3"
-        fill="#ffffff" stroke="${clr}" stroke-width="0.8"/>
+      <rect x="${lblX}" y="${lblY}" width="${lblW}" height="17" rx="2"
+        fill="#fbf9f4"/>
       <text x="${lblX + lblW / 2}" y="${lblY + 12}"
-        text-anchor="middle" font-size="10" font-weight="600" fill="${clr}"
-        font-family="-apple-system,sans-serif">${lbl}</text>`;
+        text-anchor="middle" font-size="10" font-weight="700"
+        fill="${clr}">${lbl}</text>`;
 
     /* timestamp — outside the arrow on the destination side */
     if (row.ts) {
@@ -658,7 +778,7 @@ function makeSVG(svgId, colDefs, rows) {
         : Math.max(x2 - 5, 4);
       const anchor = right ? 'start' : 'end';
       msgs += `<text x="${tsX}" y="${ay - 3}"
-        text-anchor="${anchor}" font-size="8" fill="#94a3b8">${row.ts}s</text>`;
+        text-anchor="${anchor}" font-size="8" fill="#8a7f72">${row.ts}s</text>`;
     }
 
     y += ROW_H;
@@ -681,21 +801,21 @@ const REG_COLS = [
   {id:'TAS',   label:'TAS',    sub:'10.244.7.86'},
 ];
 const REG_ROWS = [
-  {type:'note', label:'── First REGISTER attempt (CSeq:1) — auth challenge round ──', color:'#b45309'},
+  {type:'note', label:'── First REGISTER attempt (CSeq:1) — auth challenge round ──', color:'#b91c1c'},
   {from:0, to:1, label:'REGISTER (CSeq:1)', type:'register', ts:'0.001'},
   {from:1, to:2, label:'REGISTER', type:'register'},
-  {type:'note', label:'   I-CSCF → HSS: UAR / UAA  (Diameter Cx) — HSS selects and assigns S-CSCF', color:'#be185d'},
+  {type:'note', label:'   I-CSCF → HSS: UAR / UAA  (Diameter Cx) — HSS selects and assigns S-CSCF', color:'#5b21b6'},
   {from:2, to:3, label:'REGISTER', type:'register'},
-  {type:'note', label:'   S-CSCF → HSS: MAR / MAA  (Diameter Cx) — S-CSCF gets auth vectors (AKA)', color:'#be185d'},
+  {type:'note', label:'   S-CSCF → HSS: MAR / MAA  (Diameter Cx) — S-CSCF gets auth vectors (AKA)', color:'#5b21b6'},
   {from:3, to:2, label:'401 Unauthorized  (auth challenge)', type:'auth'},
   {from:2, to:1, label:'401 Unauthorized', type:'auth'},
   {from:1, to:0, label:'401 Unauthorized', type:'auth', ts:'0.009'},
-  {type:'note', label:'── Second REGISTER attempt (CSeq:2) — with computed credentials ──', color:'#b45309'},
+  {type:'note', label:'── Second REGISTER attempt (CSeq:2) — with computed credentials ──', color:'#b91c1c'},
   {from:0, to:1, label:'REGISTER (CSeq:2, credentials)', type:'register', ts:'0.285'},
   {from:1, to:2, label:'REGISTER', type:'register'},
   {from:2, to:3, label:'REGISTER', type:'register'},
-  {type:'note', label:'   S-CSCF → HSS: SAR / SAA  (Diameter Cx) — S-CSCF gets user profile + iFC list', color:'#be185d'},
-  {type:'note', label:'   S-CSCF checks iFC → TAS entry found → send 3rd-party REGISTER to TAS', color:'#059669'},
+  {type:'note', label:'   S-CSCF → HSS: SAR / SAA  (Diameter Cx) — S-CSCF gets user profile + iFC list', color:'#5b21b6'},
+  {type:'note', label:'   S-CSCF checks iFC → TAS entry found → send 3rd-party REGISTER to TAS', color:'#7c2d12'},
   {from:3, to:4, label:'REGISTER  (3rd-party iFC trigger)', type:'register', ts:'0.287'},
   {from:4, to:3, label:'200 OK', type:'ok'},
   {from:3, to:2, label:'200 OK', type:'ok'},
@@ -716,24 +836,24 @@ const SETUP_COLS = [
   {id:'UE2',   label:'UE2',    sub:'12.0.0.2'},
 ];
 const SETUP_ROWS = [
-  {type:'note', label:'── Originating side: UE1 initiates call ──', color:'#1d4ed8'},
+  {type:'note', label:'── Originating side: UE1 initiates call ──', color:'#1e40af'},
   {from:0, to:1, label:'INVITE +919952000068  (CSeq:17, SDP offer)', type:'invite', ts:'27.12'},
   {type:'note', label:'   P-CSCF uses Service-Route → routes directly to S-CSCF (I-CSCF bypassed on INVITE path)'},
   {from:1, to:2, label:'INVITE', type:'invite'},
-  {type:'note', label:'   S-CSCF checks UE1 originating iFC → TAS matched → apply originating service', color:'#059669'},
+  {type:'note', label:'   S-CSCF checks UE1 originating iFC → TAS matched → apply originating service', color:'#7c2d12'},
   {from:2, to:3, label:'INVITE  [orig iFC trigger]', type:'invite', ts:'27.12'},
-  {type:'note', label:'   TAS: call barring · ODB · CLIR · prepaid balance check · call recording trigger…', color:'#7c3aed'},
+  {type:'note', label:'   TAS: call barring · ODB · CLIR · prepaid balance check · call recording trigger…', color:'#be185d'},
   {from:3, to:2, label:'INVITE  [orig service done → back to S-CSCF]', type:'invite', ts:'27.16'},
-  {type:'note', label:'   ✓ TAS → S-CSCF  (NOT I-CSCF)  — confirmed in Wireshark frame 268', color:'#dc2626'},
-  {type:'note', label:'── Terminating routing: S-CSCF → I-CSCF → HSS LIR for UE2 ──', color:'#d97706'},
+  {type:'note', label:'   ✓ TAS → S-CSCF  (NOT I-CSCF)  — confirmed in Wireshark frame 268', color:'#b91c1c'},
+  {type:'note', label:'── Terminating routing: S-CSCF → I-CSCF → HSS LIR for UE2 ──', color:'#b45309'},
   {from:2, to:4, label:'INVITE  [term routing → I-CSCF LIR]', type:'invite'},
-  {type:'note', label:'   I-CSCF → HSS: LIR / LIA  (Diameter Cx) — "Which S-CSCF serves +919952000068?"', color:'#be185d'},
+  {type:'note', label:'   I-CSCF → HSS: LIR / LIA  (Diameter Cx) — "Which S-CSCF serves +919952000068?"', color:'#5b21b6'},
   {from:4, to:2, label:'INVITE  [LIA: UE2 S-CSCF found]', type:'invite', ts:'27.16'},
-  {type:'note', label:'   S-CSCF checks UE2 terminating iFC → TAS matched → apply terminating service', color:'#059669'},
+  {type:'note', label:'   S-CSCF checks UE2 terminating iFC → TAS matched → apply terminating service', color:'#7c2d12'},
   {from:2, to:3, label:'INVITE  [term iFC trigger]', type:'invite', ts:'27.16'},
-  {type:'note', label:'   TAS: call divert · call waiting · barring (MT) · PRBT flag · VoLTE check…', color:'#7c3aed'},
+  {type:'note', label:'   TAS: call divert · call waiting · barring (MT) · PRBT flag · VoLTE check…', color:'#be185d'},
   {from:3, to:2, label:'INVITE  [term service done → back to S-CSCF]', type:'invite', ts:'27.20'},
-  {type:'note', label:'── S-CSCF → P-CSCF → UE2 delivery ──', color:'#1d4ed8'},
+  {type:'note', label:'── S-CSCF → P-CSCF → UE2 delivery ──', color:'#1e40af'},
   {from:2, to:1, label:'INVITE', type:'invite'},
   {from:1, to:5, label:'INVITE  (CSeq:17)', type:'invite', ts:'27.21'},
   {type:'note', label:'   Each intermediate hop sends 100 Trying immediately (hop-by-hop, not end-to-end)'},
@@ -753,15 +873,15 @@ const PROG_COLS = [
   {id:'UE2',   label:'UE2',    sub:'12.0.0.2'},
 ];
 const PROG_ROWS = [
-  {type:'note', label:'── 183 Session Progress (early SDP answer) — via Record-Route path ──', color:'#c2410c'},
+  {type:'note', label:'── 183 Session Progress (early SDP answer) — via Record-Route path ──', color:'#b45309'},
   {from:4, to:1, label:'183 Session Progress  (SDP answer)', type:'progress', ts:'27.40'},
   {from:1, to:2, label:'183', type:'progress'},
   {from:2, to:3, label:'183', type:'progress'},
   {from:3, to:2, label:'183', type:'progress'},
   {from:2, to:1, label:'183', type:'progress'},
   {from:1, to:0, label:'183 Session Progress', type:'progress', ts:'27.43'},
-  {type:'note', label:'   TAS → ANNC Server (10.220.10.30): INVITE  [starts ringback tone "tring tring" for UE1]', color:'#ea580c'},
-  {type:'note', label:'── PRACK (RFC 3262) — UE1 acknowledges reliable 183 ──', color:'#6d28d9'},
+  {type:'note', label:'   TAS → ANNC Server (10.220.10.30): INVITE  [starts ringback tone "tring tring" for UE1]', color:'#0f766e'},
+  {type:'note', label:'── PRACK (RFC 3262) — UE1 acknowledges reliable 183 ──', color:'#5b21b6'},
   {from:0, to:1, label:'PRACK  (CSeq:18)', type:'prack', ts:'27.48'},
   {from:1, to:2, label:'PRACK', type:'prack'},
   {from:2, to:3, label:'PRACK', type:'prack'},
@@ -774,7 +894,7 @@ const PROG_ROWS = [
   {from:3, to:2, label:'200 OK', type:'ok'},
   {from:2, to:1, label:'200 OK', type:'ok'},
   {from:1, to:0, label:'200 OK  (PRACK)', type:'ok'},
-  {type:'note', label:'── UPDATE (CSeq:19) — finalize SDP: lock codecs and RTP media ports ──', color:'#0369a1'},
+  {type:'note', label:'── UPDATE (CSeq:19) — finalize SDP: lock codecs and RTP media ports ──', color:'#0f766e'},
   {from:0, to:1, label:'UPDATE  (CSeq:19, SDP offer)', type:'update', ts:'27.64'},
   {from:1, to:2, label:'UPDATE', type:'update'},
   {from:2, to:3, label:'UPDATE', type:'update'},
@@ -787,7 +907,7 @@ const PROG_ROWS = [
   {from:3, to:2, label:'200 OK', type:'ok'},
   {from:2, to:1, label:'200 OK', type:'ok'},
   {from:1, to:0, label:'200 OK  (UPDATE)', type:'ok', ts:'27.77'},
-  {type:'note', label:'── 180 Ringing — UE2 ka phone officially baj raha hai ──', color:'#c2410c'},
+  {type:'note', label:'── 180 Ringing — UE2 ka phone officially baj raha hai ──', color:'#b45309'},
   {from:4, to:1, label:'180 Ringing', type:'ringing', ts:'27.80'},
   {from:1, to:2, label:'180 Ringing', type:'ringing'},
   {from:2, to:3, label:'180 Ringing', type:'ringing'},
@@ -807,8 +927,8 @@ const ANS_ROWS = [
   {from:3, to:2, label:'200 OK', type:'ok'},
   {from:2, to:1, label:'200 OK', type:'ok'},
   {from:1, to:0, label:'200 OK  (INVITE)', type:'ok', ts:'36.99'},
-  {type:'note', label:'   TAS → ANNC Server (10.220.10.30): BYE  [stop ringback — call is being answered!]', color:'#ea580c'},
-  {type:'note', label:'── UE1 sends ACK → three-way handshake complete ──', color:'#6d28d9'},
+  {type:'note', label:'   TAS → ANNC Server (10.220.10.30): BYE  [stop ringback — call is being answered!]', color:'#0f766e'},
+  {type:'note', label:'── UE1 sends ACK → three-way handshake complete ──', color:'#5b21b6'},
   {from:0, to:1, label:'ACK  (CSeq:17)', type:'ack', ts:'37.04'},
   {from:1, to:2, label:'ACK', type:'ack'},
   {from:2, to:3, label:'ACK', type:'ack'},
@@ -822,14 +942,14 @@ const ANS_ROWS = [
    PHASE 05 — TEARDOWN
 ════════════════════════════════════════════════ */
 const BYE_ROWS = [
-  {type:'note', label:'── UE2 initiates BYE (t≈45.52s) — UE2 leg teardown ──', color:'#dc2626'},
+  {type:'note', label:'── UE2 initiates BYE (t≈45.52s) — UE2 leg teardown ──', color:'#b91c1c'},
   {from:4, to:1, label:'BYE', type:'bye', ts:'45.52'},
   {from:1, to:2, label:'BYE', type:'bye'},
   {from:2, to:3, label:'BYE', type:'bye'},
   {from:3, to:2, label:'200 OK  (BYE — UE2 leg closed)', type:'ok'},
   {from:2, to:1, label:'200 OK', type:'ok'},
   {from:1, to:4, label:'200 OK', type:'ok', ts:'45.52'},
-  {type:'note', label:'── TAS holds UE1 leg separately → must also send BYE to UE1 (B2BUA behaviour) ──', color:'#dc2626'},
+  {type:'note', label:'── TAS holds UE1 leg separately → must also send BYE to UE1 (B2BUA behaviour) ──', color:'#b91c1c'},
   {from:3, to:2, label:'BYE  (UE1 dialog — from TAS)', type:'bye', ts:'45.55'},
   {from:2, to:1, label:'BYE', type:'bye'},
   {from:1, to:0, label:'BYE', type:'bye', ts:'45.55'},
