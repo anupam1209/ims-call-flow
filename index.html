@@ -3,968 +3,1227 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IMS Call Flow — C-DOT IMS Solution</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="VoLTE call flow — originating and terminating side — C-DOT IMS Solution §8.2 Fig. 33 and §8.4 Fig. 35.">
+<title>IMS VoLTE Call Flow</title>
+<script>
+/* Apply the stored theme before the first paint so there is no flash. */
+(function(){
+  try{
+    var t = localStorage.getItem('ims-theme');
+    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+  }catch(e){}
+})();
+</script>
 <style>
-:root {
-  --bg:    #f4f1ea;
-  --paper: #fbf9f4;
-  --ink:   #1a1a1a;
-  --muted: #5a5147;
-  --rule:  #1a1a1a;
-  --grid:  rgba(26,26,26,.06);
+/* ═══════════════════════════════════════════════════════════════
+   THEME — restrained dark neutral. One accent, muted signal hues.
+   ═══════════════════════════════════════════════════════════════ */
+:root{
+  color-scheme:dark;
 
-  --accent:  #b91c1c;
-  --accent2: #1e40af;
-  --accent3: #15803d;
-  --accent4: #b45309;
+  --bg:        #0f1217;
+  --panel:     #161a21;
+  --panel-2:   #1b2029;
+  --line:      #272d38;
+  --line-soft: #1f242d;
 
-  --serif: 'Fraunces', Georgia, serif;
-  --sans:  'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --mono:  'JetBrains Mono', 'Courier New', monospace;
+  --text:      #dfe3ea;
+  --text-2:    #a6aeba;
+  --text-3:    #737b89;
 
-  /* phase accent colours */
-  --reg:   #b45309;
-  --setup: #1e40af;
-  --prog:  #be185d;
-  --ans:   #15803d;
-  --bye:   #b91c1c;
+  --accent:      #7d9fd1;
+  --accent-soft: rgba(125,159,209,.11);
 
-  /* SIP message colours */
-  --m-register: #b91c1c;
-  --m-invite:   #1e40af;
-  --m-trying:   #1a1a1a;
-  --m-progress: #b45309;
-  --m-ringing:  #b45309;
-  --m-ok:       #15803d;
-  --m-auth:     #7f1d1d;
-  --m-ack:      #5b21b6;
-  --m-prack:    #5b21b6;
-  --m-update:   #0f766e;
-  --m-bye:      #7f1d1d;
-  --m-cx:       #5b21b6;
-  --m-note:     #5a5147;
+  /* diagram surfaces — read back by the renderer */
+  --svg-panel:    #161a21;
+  --svg-box:      #1b2029;
+  --svg-band:     #1c212a;
+  --svg-line:     #272d38;
+  --svg-lifeline: #333a46;
+  --svg-text:     #dfe3ea;
+  --svg-text-2:   #a6aeba;
+  --svg-text-3:   #737b89;
+
+  /* message hues — one per SIP / Diameter family */
+  --m-register: #c08579;
+  --m-auth:     #c08579;
+  --m-invite:   #7d9fd1;
+  --m-trying:   #79818f;
+  --m-progress: #bd9a48;
+  --m-ringing:  #bd9a48;
+  --m-ok:       #77a986;
+  --m-prack:    #968fbe;
+  --m-update:   #679dad;
+  --m-bye:      #c08579;
+  --m-cx:       #968fbe;
+  --m-rx:       #b3839a;
+  --m-enum:     #679dad;
+  --m-media:    #77a986;
+
+  /* node role accents */
+  --r-ue:   #7d9fd1;
+  --r-cscf: #8b95a6;
+  --r-aux:  #9a90b8;
+  --r-peer: #6d7480;
+
+  --sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+          "Liberation Mono", monospace;
+
+  --nav-h: 46px;
+  --page:  1400px;
 }
 
-*{box-sizing:border-box;margin:0;padding:0;}
+/* Light theme — a calm off-white, not a bright white sheet. */
+:root[data-theme="light"]{
+  color-scheme:light;
+
+  --bg:        #eceef2;
+  --panel:     #ffffff;
+  --panel-2:   #f4f6f9;
+  --line:      #d9dee6;
+  --line-soft: #e6eaf0;
+
+  --text:      #1b1f27;
+  --text-2:    #4c5563;
+  --text-3:    #77808e;
+
+  --accent:      #2f5d99;
+  --accent-soft: rgba(47,93,153,.10);
+
+  --svg-panel:    #ffffff;
+  --svg-box:      #f4f6f9;
+  --svg-band:     #f1f4f8;
+  --svg-line:     #d9dee6;
+  --svg-lifeline: #b8c0cb;
+  --svg-text:     #1b1f27;
+  --svg-text-2:   #4c5563;
+  --svg-text-3:   #77808e;
+
+  --m-register: #a04a3c;
+  --m-auth:     #a04a3c;
+  --m-invite:   #2f5d99;
+  --m-trying:   #5a6472;
+  --m-progress: #8a6512;
+  --m-ringing:  #8a6512;
+  --m-ok:       #2f7148;
+  --m-prack:    #5b4d97;
+  --m-update:   #216b7d;
+  --m-bye:      #a04a3c;
+  --m-cx:       #5b4d97;
+  --m-rx:       #8d4763;
+  --m-enum:     #216b7d;
+  --m-media:    #2f7148;
+
+  --r-ue:   #2f5d99;
+  --r-cscf: #5a6472;
+  --r-aux:  #5b4d97;
+  --r-peer: #8a94a2;
+}
+
+*,*::before,*::after{box-sizing:border-box;}
+
 html{
-  scroll-behavior:smooth;
   background:var(--bg);
-  background-image:
-    linear-gradient(var(--grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-  background-size:24px 24px;
+  scroll-behavior:smooth;
 }
 
 body{
-  max-width:1280px;
-  margin:0 auto;
-  min-height:100vh;
-  background:var(--paper);
-  border-left:1px solid var(--rule);
-  border-right:1px solid var(--rule);
-  border-top:6px solid var(--ink);
-  color:var(--ink);
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
   font-family:var(--sans);
   font-size:15px;
-  line-height:1.6;
+  line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
 }
 
-/* ── HEADER ── */
-header{
-  background:var(--paper);
-  border-bottom:2px solid var(--ink);
-  padding:40px 40px 24px;
-}
-.doc-meta{
-  display:flex;
-  justify-content:space-between;
-  gap:12px 24px;
-  flex-wrap:wrap;
-  font-family:var(--mono);
-  font-size:11px;
-  letter-spacing:.1em;
-  text-transform:uppercase;
-  color:var(--muted);
-  margin-bottom:16px;
-}
-header h1{
-  font-family:var(--serif);
-  font-size:46px;
-  line-height:1.05;
-  font-weight:800;
-  letter-spacing:-.02em;
-  color:var(--ink);
-}
-header h1 .accent{color:var(--accent);font-style:italic;}
-.badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px;}
-.badge{
-  font-family:var(--mono);
-  font-size:10px;
-  font-weight:500;
-  letter-spacing:.08em;
-  text-transform:uppercase;
-  padding:4px 10px;
-  border-radius:2px;
-  border:1px solid;
-}
-.b-green {color:#15803d;border-color:rgba(21,128,61,.45); background:rgba(21,128,61,.07);}
-.b-blue  {color:#1e40af;border-color:rgba(30,64,175,.45); background:rgba(30,64,175,.07);}
-.b-amber {color:#b45309;border-color:rgba(180,83,9,.45);  background:rgba(180,83,9,.07);}
-.b-red   {color:#b91c1c;border-color:rgba(185,28,28,.45); background:rgba(185,28,28,.07);}
+.wrap{max-width:var(--page);margin:0 auto;padding:0 24px;}
 
-/* ── STICKY NAV ── */
-nav{
-  position:sticky;top:0;z-index:50;
-  background:var(--paper);
-  border-bottom:1px solid var(--ink);
-  padding:0 40px;
-  display:flex;
-  align-items:center;
-  gap:2px;
-  overflow-x:auto;
+a{color:var(--accent);}
+
+/* ── MASTHEAD ─────────────────────────────────────────────── */
+.masthead{border-bottom:1px solid var(--line);padding:46px 0 30px;}
+.masthead__eyebrow{
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--text-3);
 }
-nav a{
-  display:inline-block;
-  padding:12px 12px;
-  font-family:var(--mono);
-  font-size:10.5px;
-  font-weight:500;
-  letter-spacing:.08em;
-  text-transform:uppercase;
-  color:var(--muted);
-  text-decoration:none;
+.masthead h1{
+  margin:14px 0 0;font-size:34px;font-weight:600;
+  letter-spacing:-.022em;line-height:1.15;
+}
+.masthead h1 em{font-style:normal;color:var(--accent);}
+.masthead__lede{margin:14px 0 0;max-width:78ch;color:var(--text-2);}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px;}
+.meta span{
+  font-family:var(--mono);font-size:11px;letter-spacing:.03em;
+  color:var(--text-2);background:var(--panel);
+  border:1px solid var(--line);border-radius:3px;padding:4px 9px;
+}
+
+/* ── STICKY NAV ───────────────────────────────────────────── */
+.tabs{
+  position:sticky;top:0;z-index:60;
+  background:color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.tabs__inner{
+  max-width:var(--page);margin:0 auto;padding:0 24px;
+  display:flex;align-items:center;gap:14px;
+}
+.tabs__links{display:flex;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none;}
+.tabs__links::-webkit-scrollbar{display:none;}
+.tabs a{
+  flex:none;padding:13px 14px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--text-3);text-decoration:none;
   border-bottom:2px solid transparent;
+  transition:color .15s ease, border-color .15s ease;
   white-space:nowrap;
-  transition:color .15s, border-color .15s;
 }
-nav a:hover{color:var(--accent);border-bottom-color:var(--accent);}
-nav .sep{color:rgba(26,26,26,.25);margin:0 2px;user-select:none;font-family:var(--mono);}
+.tabs a:hover{color:var(--text);}
+.tabs a[aria-current="true"]{color:var(--accent);border-bottom-color:var(--accent);}
 
-/* ── LAYOUT ── */
-.container{padding:40px 40px 64px;}
-
-/* ── NODE GRID ── */
-.section-label{
-  font-family:var(--mono);
-  font-size:12px;
-  font-weight:700;
-  letter-spacing:.15em;
-  text-transform:uppercase;
-  color:var(--muted);
-  margin:24px 0 14px;
-  padding-bottom:8px;
-  border-bottom:1px solid var(--ink);
+/* ── THEME TOGGLE ─────────────────────────────────────────── */
+.theme-toggle{
+  flex:none;display:inline-flex;align-items:center;gap:7px;
+  padding:5px 10px;margin:6px 0;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--text-3);
+  background:var(--panel);border:1px solid var(--line);
+  border-radius:4px;cursor:pointer;
+  transition:color .15s ease, border-color .15s ease;
 }
-.node-grid{
+.theme-toggle:hover{color:var(--text);border-color:var(--text-3);}
+.theme-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.theme-toggle svg{
+  width:13px;height:13px;flex:none;fill:none;stroke:currentColor;
+  stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;
+}
+.theme-toggle .icon-sun{display:none;}
+.theme-toggle__label::after{content:"Dark";}
+:root[data-theme="light"] .theme-toggle .icon-sun{display:block;}
+:root[data-theme="light"] .theme-toggle .icon-moon{display:none;}
+:root[data-theme="light"] .theme-toggle__label::after{content:"Light";}
+
+/* ── GENERIC PANEL ────────────────────────────────────────── */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;}
+.section{margin:38px 0;scroll-margin-top:calc(var(--nav-h) + 12px);}
+.section__title{
+  font-family:var(--mono);font-size:11px;font-weight:500;
+  letter-spacing:.16em;text-transform:uppercase;
+  color:var(--text-3);margin:0 0 14px;
+}
+
+/* ── NODE REFERENCE ───────────────────────────────────────── */
+.nodes{
   display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(190px,1fr));
+  grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
   gap:12px;
-  margin-bottom:40px;
 }
-.node-card{
-  background:var(--paper);
-  border:1px solid var(--ink);
-  border-top:3px solid;
-  border-radius:2px;
-  padding:14px 14px 12px;
+.node{
+  background:var(--panel);border:1px solid var(--line);
+  border-left:2px solid var(--role,var(--text-3));
+  border-radius:5px;padding:14px 16px;
 }
-.node-card .nc-name{
-  font-family:var(--mono);
-  font-weight:700;
-  font-size:12px;
-  letter-spacing:.08em;
-  text-transform:uppercase;
+.node__name{
+  font-family:var(--mono);font-size:12.5px;font-weight:600;
+  letter-spacing:.06em;color:var(--text);
 }
-.node-card .nc-ip  {font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:3px;}
-.node-card .nc-role{font-size:12px;color:var(--muted);margin-top:6px;font-style:italic;line-height:1.55;}
-.n-ue   {border-top-color:#1e40af;} .n-ue    .nc-name{color:#1e40af;}
-.n-pc   {border-top-color:#b45309;} .n-pc    .nc-name{color:#b45309;}
-.n-ic   {border-top-color:#0e7490;} .n-ic    .nc-name{color:#0e7490;}
-.n-sc   {border-top-color:#7c2d12;} .n-sc    .nc-name{color:#7c2d12;}
-.n-tas  {border-top-color:#be185d;} .n-tas   .nc-name{color:#be185d;}
-.n-hss  {border-top-color:#5b21b6;} .n-hss   .nc-name{color:#5b21b6;}
-.n-annc {border-top-color:#0f766e;} .n-annc  .nc-name{color:#0f766e;}
+.node__addr{font-family:var(--mono);font-size:11px;color:var(--text-3);margin-top:4px;}
+.node__role{font-size:13px;line-height:1.6;color:var(--text-2);margin-top:9px;}
 
-/* ── PHASE BLOCK ── */
-.phase{
-  background:var(--paper);
-  border:1px solid var(--ink);
-  border-radius:2px;
-  box-shadow:6px 6px 0 var(--ink);
-  margin-bottom:48px;
-  overflow:hidden;
-}
-.phase-hdr{
-  padding:14px 20px;
-  display:flex;
-  align-items:center;
-  gap:14px;
-  flex-wrap:wrap;
-  border-bottom:1px solid var(--ink);
-}
-.phase-num{
-  font-family:var(--mono);
-  font-size:11px;
-  font-weight:700;
-  letter-spacing:.15em;
-  padding:3px 9px;
-  border-radius:2px;
-  border:1px solid;
-  background:var(--paper);
-  white-space:nowrap;
-}
-.phase-title{
-  font-family:var(--serif);
-  font-size:19px;
-  font-weight:600;
-  letter-spacing:-.01em;
-}
-.phase-src{
-  font-family:var(--mono);
-  font-size:10.5px;
-  letter-spacing:.04em;
-  color:var(--muted);
-  margin-left:auto;
-}
-
-.phase-hdr.ph-reg  {background:#fef3c7;}
-.phase-hdr.ph-reg   .phase-num{color:var(--reg);  border-color:var(--reg);}
-.phase-hdr.ph-reg   .phase-title{color:#7c2d12;}
-.phase-hdr.ph-setup{background:#dbeafe;}
-.phase-hdr.ph-setup .phase-num{color:var(--setup);border-color:var(--setup);}
-.phase-hdr.ph-setup .phase-title{color:#1e3a8a;}
-.phase-hdr.ph-prog {background:#fce7f3;}
-.phase-hdr.ph-prog  .phase-num{color:var(--prog); border-color:var(--prog);}
-.phase-hdr.ph-prog  .phase-title{color:#831843;}
-.phase-hdr.ph-ans  {background:#dcfce7;}
-.phase-hdr.ph-ans   .phase-num{color:var(--ans);  border-color:var(--ans);}
-.phase-hdr.ph-ans   .phase-title{color:#14532d;}
-.phase-hdr.ph-bye  {background:#fee2e2;}
-.phase-hdr.ph-bye   .phase-num{color:var(--bye);  border-color:var(--bye);}
-.phase-hdr.ph-bye   .phase-title{color:#7f1d1d;}
-
-/* ── HINGLISH BOX ── */
-.hinglish{
-  padding:18px 24px;
-  background:var(--paper);
-  border-bottom:1px solid var(--ink);
-  font-size:14.5px;
-  color:var(--ink);
-  line-height:1.75;
-}
-.hinglish b{color:var(--ink);font-weight:600;}
-.hi{
-  display:inline-block;
-  font-family:var(--mono);
-  font-weight:700;
-  padding:1px 7px;
-  border-radius:2px;
-  font-size:11px;
-  letter-spacing:.04em;
-  margin-right:2px;
-}
-.hi-reg  {background:rgba(180,83,9,.12); color:#b45309;}
-.hi-blue {background:rgba(30,64,175,.10);color:#1e40af;}
-.hi-grn  {background:rgba(21,128,61,.12);color:#15803d;}
-.hi-red  {background:rgba(185,28,28,.10);color:#b91c1c;}
-.hi-pur  {background:rgba(91,33,182,.10);color:#5b21b6;}
-.hi-org  {background:rgba(124,45,18,.10);color:#7c2d12;}
-
-/* ── DIAGRAM ── */
-.diagram-wrap{overflow-x:auto;padding:24px 20px;}
-svg.flow{display:block;font-family:var(--mono);}
-
-/* ── LEGEND ── */
-.legend-hdr-label{
-  font-family:var(--mono);
-  font-size:11px;
-  font-weight:700;
-  letter-spacing:.15em;
-  text-transform:uppercase;
-  color:var(--muted);
-}
-.legend-grid{
-  display:flex;flex-wrap:wrap;gap:10px;
-  padding:16px 20px;
-  background:var(--paper);
-}
-.leg-item{
-  display:flex;align-items:center;gap:10px;
-  padding:8px 12px;
-  border:1px solid rgba(26,26,26,.2);
-  border-radius:2px;
-  font-family:var(--mono);
-  font-size:11px;
-  letter-spacing:.04em;
-}
-.leg-line{width:26px;height:3px;border-radius:1px;flex-shrink:0;}
-.leg-label{color:var(--ink);}
-
-/* ── KEY FACTS TABLE ── */
-.facts{
-  width:100%;border-collapse:collapse;
-  font-size:13.5px;margin:12px 0 0;
-}
+/* ── FACTS TABLE ──────────────────────────────────────────── */
+.table-scroll{overflow-x:auto;}
+.facts{width:100%;border-collapse:collapse;font-size:13.5px;min-width:640px;}
 .facts th{
-  background:var(--ink);color:var(--paper);
-  font-family:var(--mono);
-  font-weight:500;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
-  padding:9px 14px;text-align:left;
+  text-align:left;font-family:var(--mono);font-weight:500;
+  font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--text-3);background:var(--panel-2);
+  padding:12px 16px;border-bottom:1px solid var(--line);
 }
 .facts td{
-  padding:11px 14px;
-  border-bottom:1px solid rgba(26,26,26,.12);
-  vertical-align:top;
+  padding:12px 16px;border-bottom:1px solid var(--line-soft);
+  color:var(--text-2);vertical-align:top;
 }
-.facts tr:last-child td{border-bottom:none;}
-.facts .fc{
-  font-family:var(--mono);
-  font-size:.85em;
-  color:var(--accent2);
-  background:rgba(30,64,175,.08);
-  padding:1px 5px;
-  border-radius:3px;
+.facts tr:last-child td{border-bottom:0;}
+.facts strong{color:var(--text);font-weight:600;}
+.facts code,.mono{
+  font-family:var(--mono);font-size:12px;color:var(--accent);
+  background:var(--accent-soft);border-radius:3px;padding:1px 5px;
 }
 
-/* ── FOOTER ── */
+/* ── FLOW SECTION ─────────────────────────────────────────── */
+.flow{margin:30px 0;scroll-margin-top:calc(var(--nav-h) + 12px);}
+.flow__head{
+  display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
+  padding:16px 20px;border-bottom:1px solid var(--line);
+}
+.flow__num{
+  font-family:var(--mono);font-size:11px;letter-spacing:.12em;
+  color:var(--text-3);border:1px solid var(--line);
+  border-radius:3px;padding:3px 8px;
+}
+.flow__title{margin:0;font-size:18px;font-weight:600;letter-spacing:-.012em;}
+.flow__src{
+  margin-left:auto;font-family:var(--mono);font-size:11px;
+  letter-spacing:.03em;color:var(--text-3);
+}
+.flow__body{
+  padding:18px 20px;border-bottom:1px solid var(--line);
+  color:var(--text-2);font-size:14px;line-height:1.7;
+}
+.flow__body p{margin:0 0 11px;}
+.flow__body p:last-child{margin:0;}
+.flow__body strong{color:var(--text);font-weight:600;}
+.tag{
+  display:inline-block;font-family:var(--mono);font-size:10px;
+  letter-spacing:.08em;text-transform:uppercase;
+  color:var(--text-2);background:var(--panel-2);
+  border:1px solid var(--line);border-radius:3px;
+  padding:2px 7px;margin-right:9px;vertical-align:1px;white-space:nowrap;
+}
+
+/* ── SEQUENCE DIAGRAM ─────────────────────────────────────────
+   .seq__axis is the anchored node header. It sits OUTSIDE the
+   horizontal scroller and mirrors its scrollLeft, so the columns
+   stay locked to the lifelines below while the flow is read.
+   Both SVGs are rendered at a fixed pixel width — nothing rescales
+   or reflows on resize, hover or scroll.
+   ─────────────────────────────────────────────────────────── */
+.seq{margin:0;}
+.seq__axis{
+  position:sticky;top:var(--nav-h);z-index:20;
+  overflow:hidden;
+  background:var(--panel);
+  border-bottom:1px solid var(--line-soft);
+  padding:12px 16px 0;
+}
+.seq__body{
+  overflow-x:auto;overscroll-behavior-x:contain;
+  -webkit-overflow-scrolling:touch;
+  padding:0 16px 16px;
+}
+.seq svg{display:block;font-family:var(--mono);}
+.seq svg .note-t{font-family:var(--sans);}
+.seq__foot{
+  display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  padding:11px 20px;border-top:1px solid var(--line-soft);
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;
+  color:var(--text-3);
+}
+
+/* thin, unobtrusive scrollbars */
+.seq__body::-webkit-scrollbar{height:9px;}
+.seq__body::-webkit-scrollbar-track{background:var(--panel-2);}
+.seq__body::-webkit-scrollbar-thumb{background:#333b47;border-radius:5px;}
+.seq__body::-webkit-scrollbar-thumb:hover{background:#404958;}
+
+/* ── LEGEND ───────────────────────────────────────────────── */
+.legend{display:flex;flex-wrap:wrap;gap:8px;padding:16px 20px;}
+.legend__item{
+  display:flex;align-items:center;gap:10px;
+  padding:7px 11px;background:var(--panel-2);
+  border:1px solid var(--line);border-radius:4px;
+  font-family:var(--mono);font-size:11px;color:var(--text-2);
+}
+.legend__swatch{width:26px;height:0;flex:none;border-top:2px solid currentColor;}
+.legend__swatch[data-dashed]{border-top-style:dashed;}
+
+/* ── FOOTER ───────────────────────────────────────────────── */
 footer{
-  text-align:center;
-  padding:24px 32px 40px;
-  font-family:var(--mono);
-  font-size:11px;
-  letter-spacing:.05em;
-  line-height:1.9;
-  color:var(--muted);
-  border-top:2px solid var(--ink);
-  background:var(--paper);
+  border-top:1px solid var(--line);margin-top:46px;
+  padding:26px 0 48px;
+  font-family:var(--mono);font-size:11px;line-height:1.95;
+  color:var(--text-3);
+}
+footer b{color:var(--text-2);font-weight:500;}
+
+/* ── RESPONSIVE ───────────────────────────────────────────── */
+@media (max-width:760px){
+  body{font-size:14.5px;}
+  .wrap,.tabs__inner{padding:0 16px;}
+  .masthead{padding:32px 0 22px;}
+  .masthead h1{font-size:26px;}
+  .flow__head{padding:14px 16px;}
+  .flow__src{margin-left:0;flex-basis:100%;}
+  .flow__body{padding:16px;}
+  .seq__axis{padding:10px 12px 0;}
+  .seq__body{padding:0 12px 14px;}
+  .legend{padding:14px 16px;}
+  .theme-toggle__label{display:none;}
+  .theme-toggle{padding:6px;}
 }
 
-/* ── PRINT ── */
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto;}
+  *{transition:none !important;}
+}
+
 @media print{
-  html{background:#fff;}
-  body{border:none;max-width:none;}
-  .phase{box-shadow:none;page-break-inside:avoid;}
-  nav{display:none;}
-}
-
-/* ── RESPONSIVE ── */
-@media (max-width:740px){
-  header{padding:28px 20px 20px;}
-  header h1{font-size:32px;}
-  nav{padding:0 20px;}
-  .container{padding:24px 16px 48px;}
-  .phase{box-shadow:4px 4px 0 var(--ink);}
-  .phase-src{margin-left:0;flex-basis:100%;}
-  .hinglish{padding:16px 18px;}
+  html,body{background:#fff;color:#111;}
+  .tabs{display:none;}
+  .seq__axis{position:static;}
+  .flow{break-inside:avoid;}
 }
 </style>
 </head>
 <body>
 
-<!-- ═══ HEADER ═══ -->
-<header>
-  <div class="doc-meta">
-    <span>C-DOT IMS Solution · July 2024</span>
-    <span>Wireshark-Verified · UE1 ↔ UE2 · 4G VoLTE</span>
-  </div>
-  <h1>IMS <span class="accent">Call Flow</span> Diagram</h1>
-  <div class="badges">
-    <span class="badge b-green">✓ Wireshark Verified</span>
-    <span class="badge b-blue">3GPP TS 23.228</span>
-    <span class="badge b-amber">P-CSCF · I-CSCF · S-CSCF · TAS · HSS</span>
-    <span class="badge b-red">TAS → S-CSCF (orig &amp; term iFC) ✓ corrected</span>
+<header class="masthead">
+  <div class="wrap">
+    <p class="masthead__eyebrow">C-DOT IMS Solution · June 2026 · §8.2 Fig. 33 &amp; §8.4 Fig. 35</p>
+    <h1>IMS <em>VoLTE Call Flow</em></h1>
+    <p class="masthead__lede">
+      A 4G user places a VoLTE call over the IMS network. IMS signalling travels on the
+      <strong>default bearer</strong>; a new <strong>dedicated bearer</strong> is established
+      dynamically for the voice traffic. Every message below is redrawn from the source
+      figures — same nodes, same order, same direction.
+    </p>
+    <div class="meta">
+      <span>UE1 → UE2 · 4G VoLTE</span>
+      <span>3GPP TS 23.228</span>
+      <span>P-CSCF · I-CSCF · S-CSCF · TAS · HSS · PCRF · ENUM+NPS</span>
+      <span>Wireshark-verified</span>
+    </div>
   </div>
 </header>
 
-<!-- ═══ NAV ═══ -->
-<nav>
-  <a href="#nodes">Nodes</a><span class="sep">|</span>
-  <a href="#reg">[01] Registration</a><span class="sep">|</span>
-  <a href="#setup">[02] Call Setup</a><span class="sep">|</span>
-  <a href="#session">[03] Session Progress</a><span class="sep">|</span>
-  <a href="#answer">[04] Call Answer</a><span class="sep">|</span>
-  <a href="#teardown">[05] Teardown</a>
+<nav class="tabs" aria-label="Sections">
+  <div class="tabs__inner">
+    <div class="tabs__links">
+      <a href="#nodes">Nodes</a>
+      <a href="#reg">01 · Registration</a>
+      <a href="#orig">02 · Originating Side</a>
+      <a href="#term">03 · Terminating Side</a>
+      <a href="#legend">Legend</a>
+    </div>
+    <button type="button" class="theme-toggle" data-theme-toggle
+            aria-label="Switch between dark and light theme">
+      <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5Z"/>
+      </svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="4.2"/>
+        <path d="M12 2.6v2.2M12 19.2v2.2M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.6 12h2.2M19.2 12h2.2M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6"/>
+      </svg>
+      <span class="theme-toggle__label"></span>
+    </button>
+  </div>
 </nav>
 
-<div class="container">
+<main class="wrap">
 
-<!-- ═══ NODE REFERENCE ═══ -->
-<div id="nodes">
-<p class="section-label">Network Nodes &amp; IP Reference</p>
-<div class="node-grid">
-  <div class="node-card n-ue">
-    <div class="nc-name">UE1</div>
-    <div class="nc-ip">12.0.0.1</div>
-    <div class="nc-ip">+919952000067</div>
-    <div class="nc-role">Calling phone — jis phone se call jaati hai</div>
+<!-- ══════════════ NODE REFERENCE ══════════════ -->
+<section class="section" id="nodes" aria-labelledby="nodes-t">
+  <h2 class="section__title" id="nodes-t">Network nodes</h2>
+  <div class="nodes">
+    <article class="node" style="--role:var(--r-ue)">
+      <div class="node__name">UE1</div>
+      <div class="node__addr">12.0.0.1 · +919952000067</div>
+      <p class="node__role">Calling phone — the handset that originates the call.</p>
+    </article>
+    <article class="node" style="--role:var(--r-ue)">
+      <div class="node__name">UE2</div>
+      <div class="node__addr">12.0.0.2 · +919952000068</div>
+      <p class="node__role">Called phone — the handset that receives the call.</p>
+    </article>
+    <article class="node" style="--role:var(--r-cscf)">
+      <div class="node__name">P-CSCF</div>
+      <div class="node__addr">10.220.10.28 / 10.244.9.108</div>
+      <p class="node__role">The UE's first SIP contact point and edge proxy. Delivers the Service-Route on registration and runs AAR/AAA with the PCRF to authorise the voice bearer.</p>
+    </article>
+    <article class="node" style="--role:var(--r-cscf)">
+      <div class="node__name">I-CSCF</div>
+      <div class="node__addr">10.220.6.29 / 10.244.7.77</div>
+      <p class="node__role">Queries the HSS for the subscriber's S-CSCF address — UAR/UAA during registration, LIR/LIA on the terminating leg. Entry point into the home network.</p>
+    </article>
+    <article class="node" style="--role:var(--r-cscf)">
+      <div class="node__name">S-CSCF</div>
+      <div class="node__addr">10.220.6.22 / 10.244.7.84</div>
+      <p class="node__role">The subscriber's serving node. Applies the initial filter criteria, routes to the TAS, and performs the ENUM/NPS NAPTR lookup.</p>
+    </article>
+    <article class="node" style="--role:var(--r-aux)">
+      <div class="node__name">TAS</div>
+      <div class="node__addr">10.244.7.86 / 10.220.6.30</div>
+      <p class="node__role">Telephony Application Server — call barring, CFU, CLIR, call waiting, PRBT and prepaid. Queries the HSS over Sh with UDR/UDA for TADS, UserState and Location-Info.</p>
+    </article>
+    <article class="node" style="--role:var(--r-aux)">
+      <div class="node__name">HSS</div>
+      <div class="node__addr">10.220.6.29 · Diameter Cx / Sh</div>
+      <p class="node__role">Subscriber database — iFC profile, authentication vectors, S-CSCF assignment, TADS, UserState and Location.</p>
+    </article>
+    <article class="node" style="--role:var(--r-aux)">
+      <div class="node__name">PCRF</div>
+      <div class="node__addr">Diameter Rx · via DRA / DLB</div>
+      <p class="node__role">Policy node. On the SDP carried in the 183 the P-CSCF sends an AAR and the PCRF authorises the dedicated voice bearer; STR/STA releases it when the call ends.</p>
+    </article>
+    <article class="node" style="--role:var(--r-aux)">
+      <div class="node__name">IMS-ENUM + NPS</div>
+      <div class="node__addr">NAPTR / DNS · number portability</div>
+      <p class="node__role">ENUM server plus number portability server. The S-CSCF sends a NAPTR query and receives the subscriber's domain or lrn, which the call is routed on.</p>
+    </article>
+    <article class="node" style="--role:var(--r-peer)">
+      <div class="node__name">Peer network</div>
+      <div class="node__addr">terminating / originating side</div>
+      <p class="node__role">Everything beyond the right edge of the source figure — the far side's I-CSCF and S-CSCF. Drawn here as a dashed column.</p>
+    </article>
   </div>
-  <div class="node-card n-ue">
-    <div class="nc-name">UE2</div>
-    <div class="nc-ip">12.0.0.2</div>
-    <div class="nc-ip">+919952000068</div>
-    <div class="nc-role">Called phone — jis phone pe call aati hai</div>
-  </div>
-  <div class="node-card n-pc">
-    <div class="nc-name">P-CSCF</div>
-    <div class="nc-ip">10.220.10.28 / 10.244.9.108</div>
-    <div class="nc-role">UE ka pehla SIP contact, edge proxy. Service-Route deliver karta hai registration pe.</div>
-  </div>
-  <div class="node-card n-ic">
-    <div class="nc-name">I-CSCF</div>
-    <div class="nc-ip">10.220.6.29 / 10.244.7.77</div>
-    <div class="nc-role">HSS se S-CSCF ka address query karta hai (UAR/LIR). Registration aur terminating routing mein use hota hai.</div>
-  </div>
-  <div class="node-card n-sc">
-    <div class="nc-name">S-CSCF</div>
-    <div class="nc-ip">10.220.6.22 / 10.244.7.84</div>
-    <div class="nc-role">Subscriber ka serving node. iFC apply karta hai, TAS ko route karta hai. HSS se user profile leke rakhta hai.</div>
-  </div>
-  <div class="node-card n-tas">
-    <div class="nc-name">TAS</div>
-    <div class="nc-ip">10.244.7.86 / 10.220.6.30</div>
-    <div class="nc-role">Telephony App Server. Call barring, CFU, CLIR, call waiting, PRBT, prepaid — sab yahan hota hai.</div>
-  </div>
-  <div class="node-card n-hss">
-    <div class="nc-name">HSS</div>
-    <div class="nc-ip">10.220.6.29 (Diameter Cx)</div>
-    <div class="nc-role">Subscriber database. iFC profile, auth vectors, SCSCF assignment — sab yahan store hota hai.</div>
-  </div>
-  <div class="node-card n-annc">
-    <div class="nc-name">ANNC / MRF</div>
-    <div class="nc-ip">10.220.10.30</div>
-    <div class="nc-role">Announcement / Ringback tone server. TAS isko INVITE karta hai taaki caller ko "tring tring" sunaaye.</div>
-  </div>
-</div>
 
-<!-- Key facts -->
-<table class="facts">
-  <tr><th>Observation (Wireshark)</th><th>Frame #</th><th>What it proves</th></tr>
-  <tr><td>PCSCF → <span class="fc">10.220.6.22</span> (SCSCF): INVITE</td><td>246</td><td>P-CSCF sends INVITE <b>directly</b> to S-CSCF via Service-Route — I-CSCF is bypassed on INVITE path</td></tr>
-  <tr><td>SCSCF → TAS: INVITE (orig iFC)</td><td>254</td><td>S-CSCF applies UE1 originating iFC, routes to TAS</td></tr>
-  <tr><td>TAS → <span class="fc">10.220.6.22</span> (SCSCF): INVITE</td><td>268</td><td><b>TAS routes back to S-CSCF</b> — NOT to I-CSCF (common misconception corrected)</td></tr>
-  <tr><td>SCSCF → <span class="fc">10.220.6.29</span> (ICSCF): INVITE</td><td>278</td><td>S-CSCF sends to I-CSCF for terminating LIR (HSS query for UE2's SCSCF)</td></tr>
-  <tr><td>SCSCF → TAS: INVITE (term iFC)</td><td>306</td><td>S-CSCF applies UE2 terminating iFC, routes to TAS again</td></tr>
-  <tr><td>TAS → <span class="fc">10.220.6.22</span> (SCSCF): INVITE</td><td>324</td><td>TAS routes back to S-CSCF after term service — same pattern</td></tr>
-  <tr><td>TAS → ANNC (10.220.10.30): INVITE annc</td><td>550</td><td>TAS sets up ringback tone via Announcement Server while UE2 is ringing</td></tr>
-</table>
-</div>
+  <div class="panel table-scroll" style="margin-top:16px">
+    <table class="facts">
+      <thead>
+        <tr><th>Observation (Wireshark)</th><th>Frame</th><th>What it proves</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>P-CSCF → <code>10.220.6.22</code> (S-CSCF): INVITE</td><td>246</td><td>P-CSCF sends INVITE <strong>directly</strong> to S-CSCF via Service-Route — I-CSCF is bypassed on the originating INVITE path</td></tr>
+        <tr><td>S-CSCF → TAS: INVITE (orig iFC)</td><td>254</td><td>S-CSCF applies UE1's originating iFC and routes to TAS</td></tr>
+        <tr><td>TAS → <code>10.220.6.22</code> (S-CSCF): INVITE</td><td>268</td><td><strong>TAS routes back to S-CSCF</strong> — not to I-CSCF</td></tr>
+        <tr><td>S-CSCF → <code>10.220.6.29</code> (I-CSCF): INVITE</td><td>278</td><td>S-CSCF hands off to the terminating I-CSCF, which performs the LIR/LIA HSS query</td></tr>
+        <tr><td>S-CSCF → TAS: INVITE (term iFC)</td><td>306</td><td>S-CSCF applies UE2's terminating iFC and routes to TAS again</td></tr>
+        <tr><td>TAS → <code>10.220.6.22</code> (S-CSCF): INVITE</td><td>324</td><td>TAS routes back to S-CSCF after terminating service — same pattern</td></tr>
+        <tr><td>TAS → ANNC (<code>10.220.10.30</code>): INVITE</td><td>550</td><td>TAS sets up the ringback tone via the announcement server while UE2 rings</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
 
-<!-- ═══════════════════════════════════════
-     PHASE 01 — REGISTRATION
-════════════════════════════════════════ -->
-<div id="reg" class="phase" style="margin-top:36px;">
-  <div class="phase-hdr ph-reg">
-    <span class="phase-num">01</span>
-    <span class="phase-title">UE Registration</span>
-    <span class="phase-src">REGISTER · 401 · SAR/SAA · 3rd-party reg</span>
+<!-- ══════════════ 01 — REGISTRATION ══════════════ -->
+<section class="flow panel" id="reg" aria-labelledby="reg-t">
+  <header class="flow__head">
+    <span class="flow__num">01</span>
+    <h2 class="flow__title" id="reg-t">IMS Registration — precondition</h2>
+    <span class="flow__src">REGISTER · UAR/MAR/SAR · 3rd-party REGISTER</span>
+  </header>
+  <div class="flow__body">
+    <p>Before any call can be placed the UE has to register with the IMS core. Registration is what
+      gives the S-CSCF the subscriber's <strong>iFC profile</strong>, and that profile is what triggers
+      the TAS on every later INVITE.</p>
+    <p><span class="tag">Round 1</span>UE → P-CSCF → I-CSCF: REGISTER. The I-CSCF uses
+      <strong>UAR/UAA</strong> (Diameter Cx) to find out which S-CSCF will serve the subscriber. The
+      S-CSCF fetches the AKA authentication vectors with <strong>MAR/MAA</strong> and answers with a
+      <strong>401 Unauthorized</strong> challenge.</p>
+    <p><span class="tag">Round 2</span>The UE sends REGISTER again, this time with computed credentials.
+      The S-CSCF downloads the user profile and iFC list with <strong>SAR/SAA</strong>, matches an iFC and
+      sends a <strong>3rd-party REGISTER</strong> to the TAS, and 200 OK travels back to the UE. The
+      P-CSCF stores the <strong>Service-Route</strong> header — which is why every later INVITE goes
+      straight to the S-CSCF.</p>
   </div>
-  <div class="hinglish">
-    <b>Registration ka matlab kya hai?</b><br>
-    Registration mein UE apne aap ko IMS core se introduce karta hai — bilkul naye employee ka ID card banana.
-    Yeh flow do rounds mein hota hai: pehle <span class="hi hi-red">401 Challenge</span> aata hai (authentication ke liye),
-    phir credentials ke saath dobara REGISTER bhejte hain.<br><br>
-    <span class="hi hi-reg">Step 1</span> UE → P-CSCF → <b>I-CSCF</b>: REGISTER. I-CSCF ka kaam hai HSS se <b>UAR/UAA</b> (Cx Diameter) karke
-    pata lagana ki is subscriber ko kaunsa S-CSCF serve karega.<br>
-    <span class="hi hi-reg">Step 2</span> I-CSCF → <b>S-CSCF</b>: REGISTER. S-CSCF HSS se <b>MAR/MAA</b> karta hai — authentication vectors milte hain
-    (AKA challenge). <b>401</b> bhejta hai UE ko challenge ke saath.<br>
-    <span class="hi hi-reg">Step 3</span> UE dobara REGISTER bhejta hai — is baar credentials ke saath. S-CSCF HSS se
-    <b>SAR/SAA</b> karta hai — user ka <b>iFC profile</b> milta hai (Initial Filter Criteria).<br>
-    <span class="hi hi-reg">Step 4</span> S-CSCF iFC check karta hai → TAS ka entry milta hai →
-    <b>3rd-party REGISTER</b> TAS ko bhejta hai. TAS ko pata chalta hai ki yeh subscriber registered hai.
-    Phir <b>200 OK</b> wapas UE tak pahunchta hai. P-CSCF <b>Service-Route</b> header store karta hai —
-    aage ke INVITE seedha S-CSCF ko jayenge.
-  </div>
-  <div class="diagram-wrap"><svg id="svg-reg" class="flow"></svg></div>
-</div>
+  <figure class="seq" data-flow="reg">
+    <div class="seq__axis" data-axis><svg role="img" aria-label="Registration — node columns"></svg></div>
+    <div class="seq__body" data-body><svg role="img" aria-label="Registration message sequence"></svg></div>
+    <figcaption class="seq__foot">
+      <span>Sequence reads top to bottom · node columns stay anchored</span>
+      <span>Scroll horizontally to follow wide hops</span>
+    </figcaption>
+  </figure>
+</section>
 
-<!-- ═══════════════════════════════════════
-     PHASE 02 — CALL SETUP
-════════════════════════════════════════ -->
-<div id="setup" class="phase">
-  <div class="phase-hdr ph-setup">
-    <span class="phase-num">02</span>
-    <span class="phase-title">MO Call Setup — UE1 dials UE2 (+919952000068)</span>
-    <span class="phase-src">INVITE · iFC · TAS→SCSCF · LIR · t≈27.12s</span>
+<!-- ══════════════ 02 — ORIGINATING SIDE (Fig. 33) ══════════════ -->
+<section class="flow panel" id="orig" aria-labelledby="orig-t">
+  <header class="flow__head">
+    <span class="flow__num">02</span>
+    <h2 class="flow__title" id="orig-t">VoLTE Call — Originating Side</h2>
+    <span class="flow__src">§8.2 · Fig. 33 · UE1 dials UE2</span>
+  </header>
+  <div class="flow__body">
+    <p>The SIP INVITE arrives at the P-CSCF, which forwards it to the selected S-CSCF. The S-CSCF
+      identifies the VoLTE call from the <strong>iFC</strong> received during registration and forwards
+      the INVITE to the <strong>TAS</strong>. The TAS checks the UE status and the subscriber's
+      <strong>originating features</strong> and routes the INVITE back to the S-CSCF; alongside that it
+      queries the HSS over Sh with <strong>UDR/UDA</strong> for the MME/SGSN name and Cell-Id.</p>
+    <p><span class="tag">ENUM / NPS</span>The S-CSCF determines the called party's home network with a
+      <strong>NAPTR query</strong> to the IMS-ENUM+NPS server. The response returns the subscriber's
+      <strong>domain / lrn</strong> and the call is routed on it. If that lrn is not served by the home
+      network, the call is sent to the GMSC via the IBCF.</p>
+    <p><span class="tag">183 → bearer</span>When <strong>183 Session Progress</strong> comes back from the
+      terminating user, the P-CSCF analyses the SDP and sends an <strong>AAR</strong> to the PCRF with the
+      related service information — IP address, port numbers, media type. The PCRF authorises the request
+      (<strong>AAA</strong>) and triggers creation of the voice bearer. The same exchange happens again on
+      the 200 OK for the UPDATE.</p>
+    <p><span class="tag">PRACK · UPDATE</span>UE1 generates a <strong>PRACK</strong> to acknowledge the
+      reliable 183, and after its 200 OK it sends an <strong>UPDATE</strong> that locks the final SDP.
+      After <strong>180 Ringing</strong> the subscriber answers, <strong>200 OK</strong> comes back, and
+      RTP media starts flowing on the dedicated bearer.</p>
+    <p><span class="tag">BYE</span>UE1 hangs up. The BYE reaches the TAS, which queries the HSS for
+      location information (<strong>UDR/UDA</strong>) before the BYE continues to the terminating side.
+      The P-CSCF sends <strong>STR</strong> to the PCRF to release the voice bearer and receives
+      <strong>STA</strong>; 200 OK then closes every dialog.</p>
   </div>
-  <div class="hinglish">
-    <b>INVITE ka safar — orig iFC se term iFC tak</b><br>
-    Yeh phase sabse important hai. INVITE ek hi message hai lekin bohot saare hops se guzarta hai.<br><br>
-    <span class="hi hi-blue">Originating Side</span>
-    P-CSCF seedha S-CSCF ko INVITE bhejta hai — I-CSCF ko bypass karta hai (Service-Route use hoti hai registration se).
-    S-CSCF UE1 ke <b>originating iFC</b> check karta hai → TAS match hota hai →
-    INVITE TAS ko bhejta hai. TAS originating services apply karta hai
-    (call barring, ODB check, CLIR, prepaid validation).
-    TAS kaam khatam karke <b>INVITE wapas S-CSCF ko</b> bhejta hai — yahi key correction hai
-    (TAS → S-CSCF, not I-CSCF).<br><br>
-    <span class="hi hi-org">Terminating Routing</span>
-    Ab S-CSCF ko UE2 ka address dhundna hai. Isliye <b>I-CSCF ko INVITE bhejta hai</b>.
-    I-CSCF HSS se <b>LIR/LIA</b> (Location-Info-Request/Answer) Diameter query karta hai —
-    "UE2 (+919952000068) ka S-CSCF kaun sa hai?" HSS answer deta hai, I-CSCF S-CSCF ko
-    INVITE route karta hai.<br><br>
-    <span class="hi hi-pur">Terminating iFC</span>
-    UE2 ka S-CSCF terminating iFC check karta hai → TAS match →
-    INVITE TAS ko bhejta hai. TAS terminating services check karta hai
-    (call divert, call waiting, call barring incoming, PRBT flag).
-    TAS → <b>S-CSCF</b> → <b>P-CSCF</b> → <b>UE2</b>: INVITE deliver hota hai.
-  </div>
-  <div class="diagram-wrap"><svg id="svg-setup" class="flow"></svg></div>
-</div>
+  <figure class="seq" data-flow="orig">
+    <div class="seq__axis" data-axis><svg role="img" aria-label="Originating side — node columns"></svg></div>
+    <div class="seq__body" data-body><svg role="img" aria-label="Originating side message sequence"></svg></div>
+    <figcaption class="seq__foot">
+      <span>Right-hand column is the terminating network (beyond the figure's edge)</span>
+      <span>Notes in the right gutter are the figure's callout boxes</span>
+    </figcaption>
+  </figure>
+</section>
 
-<!-- ═══════════════════════════════════════
-     PHASE 03 — SESSION PROGRESS
-════════════════════════════════════════ -->
-<div id="session" class="phase">
-  <div class="phase-hdr ph-prog">
-    <span class="phase-num">03</span>
-    <span class="phase-title">Session Progress — 183 · PRACK · UPDATE · 180 Ringing</span>
-    <span class="phase-src">RFC 3262 PRACK · SDP offer/answer · t≈27.4–27.8s</span>
+<!-- ══════════════ 03 — TERMINATING SIDE (Fig. 35) ══════════════ -->
+<section class="flow panel" id="term" aria-labelledby="term-t">
+  <header class="flow__head">
+    <span class="flow__num">03</span>
+    <h2 class="flow__title" id="term-t">VoLTE Call — Terminating Side</h2>
+    <span class="flow__src">§8.4 · Fig. 35 · INVITE delivered to UE2</span>
+  </header>
+  <div class="flow__body">
+    <p>The INVITE from the originating side arrives at the terminating <strong>I-CSCF</strong>. The
+      I-CSCF finds UE2's S-CSCF through an HSS query — <strong>LIR/LIA</strong> over Diameter Cx — and
+      routes the INVITE to it. The S-CSCF applies the <strong>terminating iFC</strong> and passes the
+      INVITE to the TAS.</p>
+    <p><span class="tag">TAS ↔ HSS (Sh)</span>The TAS makes three queries:
+      <strong>TADS</strong> — TADS = 1 means the user is in the 4G / PS domain;
+      <strong>UserState</strong> — whether the user is reachable; and
+      <strong>Location-Info</strong> — MME/SGSN name and Cell-Id. Once these clear, the TAS applies the
+      terminating features (CFU, call waiting, MT barring, PRBT) and the INVITE travels back
+      S-CSCF → P-CSCF → <strong>UE2</strong>.</p>
+    <p><span class="tag">183 → bearer</span>UE2 answers with <strong>183 Session Progress</strong>. The
+      P-CSCF authorises the dedicated voice bearer with <strong>AAR/AAA</strong>, and the 183 retraces the
+      request path back through S-CSCF → TAS → S-CSCF → <strong>I-CSCF</strong> to the originating side.</p>
+    <p><span class="tag">Answer</span>PRACK and UPDATE arrive from the originating side and UE2 answers
+      200 OK to each; the UPDATE answer triggers a second AAR/AAA round. UE2 rings
+      (<strong>180 Ringing</strong>) and when the subscriber answers, the <strong>200 OK</strong>
+      establishes the RTP media session between the two users.</p>
+    <p><span class="tag">BYE</span>The BYE arrives from the originating side. The TAS queries the HSS for
+      location information and the BYE is delivered to UE2. The P-CSCF releases the bearer with
+      <strong>STR/STA</strong> and 200 OK closes every leg.</p>
   </div>
-  <div class="hinglish">
-    <b>Ringing phase mein kya kya negotiate hota hai?</b><br><br>
-    <span class="hi hi-org">183 Session Progress</span>
-    UE2 se aata hai SDP answer ke saath — matlab UE2 bolta hai "mujhe INVITE mila, yeh mera media port/codec hai."
-    Yeh message <b>Record-Route</b> ke through wapas jaata hai: UE2 → P-CSCF → S-CSCF → TAS → S-CSCF → P-CSCF → UE1.
-    Saath hi TAS <b>Announcement Server</b> (10.220.10.30) ko INVITE karta hai — UE1 ko ringback tone sunane ke liye.<br><br>
-    <span class="hi hi-pur">PRACK</span>
-    183 ek <b>reliable provisional response</b> hai (RFC 3262). Isliye UE1 PRACK bhejta hai
-    confirm karne ke liye ki 183 mila. PRACK bhi same Record-Route path se guzarta hai. UE2 200 OK bhejta hai PRACK ka.<br><br>
-    <span class="hi hi-blue">UPDATE</span>
-    Media parameters final karne ke liye UE1 UPDATE bhejta hai SDP ke saath.
-    Codecs aur RTP ports dono side confirm karte hain. 200 OK (UPDATE) wapas aata hai.<br><br>
-    <span class="hi hi-org">180 Ringing</span>
-    UE2 ka phone actually ring bajne lagta hai. 180 simple provisional response hai —
-    PRACK ki zaroorat nahi. UE1 tak pahunchta hai.
-  </div>
-  <div class="diagram-wrap"><svg id="svg-prog" class="flow"></svg></div>
-</div>
+  <figure class="seq" data-flow="term">
+    <div class="seq__axis" data-axis><svg role="img" aria-label="Terminating side — node columns"></svg></div>
+    <div class="seq__body" data-body><svg role="img" aria-label="Terminating side message sequence"></svg></div>
+    <figcaption class="seq__foot">
+      <span>Right-hand column is the originating network (beyond the figure's edge)</span>
+      <span>Responses retrace the request path, I-CSCF included</span>
+    </figcaption>
+  </figure>
+</section>
 
-<!-- ═══════════════════════════════════════
-     PHASE 04 — CALL ANSWER
-════════════════════════════════════════ -->
-<div id="answer" class="phase">
-  <div class="phase-hdr ph-ans">
-    <span class="phase-num">04</span>
-    <span class="phase-title">Call Answer — UE2 picks up · 200 OK · ACK</span>
-    <span class="phase-src">200 OK (INVITE) · BYE to ANNC · ACK · t≈36.96s</span>
-  </div>
-  <div class="hinglish">
-    <b>UE2 ne phone uthaya!</b><br><br>
-    <span class="hi hi-grn">200 OK</span>
-    UE2 phone uthata hai → <b>200 OK (INVITE)</b> Record-Route path se wapas jaata hai.
-    Saath hi SDP confirm hota hai — media session ready hai.<br><br>
-    <span class="hi hi-org">Ringback Band</span>
-    TAS ko 200 OK milta hai → TAS turant <b>Announcement Server ko BYE</b> bhejta hai —
-    ringback tone ruk jaati hai. Ab actual call connect ho rahi hai.<br><br>
-    <span class="hi hi-pur">ACK</span>
-    UE1 <b>ACK</b> bhejta hai — SIP three-way handshake ka last step.
-    ACK bhi same path se jaata hai UE2 tak.<br><br>
-    <span class="hi hi-grn">Call Established</span>
-    ACK ke baad RTP media stream directly UE1 ↔ UE2 ke beech shuru ho jaati hai
-    (P-GW / IMS-DP ke through, SIP signalling mein nahi aata).
-    <b>Dedicated voice bearer</b> already create ho chuka hota hai (PCRF ne AAR/AAA se authorize kiya tha 183 pe).
-  </div>
-  <div class="diagram-wrap"><svg id="svg-ans" class="flow"></svg></div>
-</div>
+<!-- ══════════════ LEGEND ══════════════ -->
+<section class="flow panel" id="legend" aria-labelledby="legend-t">
+  <header class="flow__head">
+    <span class="flow__num">KEY</span>
+    <h2 class="flow__title" id="legend-t">Message types</h2>
+    <span class="flow__src">solid = SIP · dashed = Diameter / DNS</span>
+  </header>
+  <div class="legend" data-legend></div>
+</section>
 
-<!-- ═══════════════════════════════════════
-     PHASE 05 — TEARDOWN
-════════════════════════════════════════ -->
-<div id="teardown" class="phase">
-  <div class="phase-hdr ph-bye">
-    <span class="phase-num">05</span>
-    <span class="phase-title">Call Teardown — BYE (UE2 initiated)</span>
-    <span class="phase-src">BYE · 200 OK · TAS dual-leg teardown · t≈45.5s</span>
-  </div>
-  <div class="hinglish">
-    <b>Call kaise khatam hoti hai?</b><br><br>
-    <span class="hi hi-red">UE2 BYE bhejta hai</span>
-    Wireshark mein t≈45.5s pe UE2 ne BYE bheja (pehli call mein).
-    BYE P-CSCF → S-CSCF → TAS path se jaata hai.<br><br>
-    <span class="hi hi-pur">TAS dual-leg teardown</span>
-    TAS ek <b>B2BUA</b> ki tarah kaam karta hai — matlab TAS ke paas <b>do alag dialogs</b> hain:
-    ek UE1 ke saath, ek UE2 ke saath. Jab UE2 BYE bhejta hai, sirf UE2 ka dialog close hota hai.
-    TAS ko <b>UE1 ka dialog bhi manually band karna padta hai</b> — isliye TAS ek alag BYE bhejta hai
-    S-CSCF → P-CSCF → UE1 ki taraf. UE1 200 OK bhejta hai.<br><br>
-    <span class="hi hi-grn">Clean teardown</span>
-    Sab dialogs properly 200 OK se close ho jaate hain.
-    PCRF ko STR (Session Termination Request) milta hai → dedicated voice bearer release hoti hai →
-    CDF CDR generate karta hai (call duration, parties, media type).
-  </div>
-  <div class="diagram-wrap"><svg id="svg-bye" class="flow"></svg></div>
-</div>
-
-<!-- ═══ LEGEND ═══ -->
-<div class="phase" style="margin-top:8px;">
-  <div class="phase-hdr">
-    <span class="legend-hdr-label">Message Type Legend</span>
-  </div>
-  <div class="legend-grid">
-    <div class="leg-item"><div class="leg-line" style="background:var(--m-register)"></div><span class="leg-label">REGISTER</span></div>
-    <div class="leg-item"><div class="leg-line" style="background:var(--m-invite)"></div><span class="leg-label">INVITE</span></div>
-    <div class="leg-item"><div class="leg-line" style="background:var(--m-trying)"></div><span class="leg-label">100 Trying</span></div>
-    <div class="leg-item"><div class="leg-line" style="background:var(--m-progress)"></div><span class="leg-label">183 Session Progress / 180 Ringing</span></div>
-    <div class="leg-item"><div class="leg-line" style="background:var(--m-ok)"></div><span class="leg-label">200 OK</span></div>
-    <div class="leg-item"><div class="leg-line" style="background:var(--m-auth)"></div><span class="leg-label">401 Unauthorized / BYE</span></div>
-    <div class="leg-item"><div class="leg-line" style="background:var(--m-prack)"></div><span class="leg-label">ACK / PRACK</span></div>
-    <div class="leg-item"><div class="leg-line" style="background:var(--m-update)"></div><span class="leg-label">UPDATE</span></div>
-    <div class="leg-item"><div class="leg-line" style="background:var(--m-cx)"></div><span class="leg-label">Diameter Cx (HSS query, annotation only)</span></div>
-  </div>
-</div>
-
-</div><!-- /container -->
+</main>
 
 <footer>
-  Source: C-DOT IMS Solution Document (July 2024, v7.0) &nbsp;+&nbsp;
-  Wireshark: pcscf_filtered_logs.pcapng &amp; scscf_icscf_tas_wiresharks_filtered.pcapng<br>
-  UE1 (12.0.0.1 · +919952000067) &nbsp;·&nbsp; P-CSCF (10.220.10.28) &nbsp;·&nbsp;
-  S-CSCF (10.220.6.22) &nbsp;·&nbsp; TAS (10.244.7.86) &nbsp;·&nbsp;
-  I-CSCF (10.220.6.29) &nbsp;·&nbsp; UE2 (12.0.0.2 · +919952000068)
+  <div class="wrap">
+    Source — C-DOT IMS Solution (June 2026, v17.0): §8.2 Fig. 33 · §8.3 description · §8.4 Fig. 35.
+    Packet captures: <b>pcscf_filtered_logs.pcapng</b>, <b>scscf_icscf_tas_wiresharks_filtered.pcapng</b>.<br>
+    UE1 <b>12.0.0.1</b> · P-CSCF <b>10.220.10.28</b> · I-CSCF <b>10.220.6.29</b> ·
+    S-CSCF <b>10.220.6.22</b> · TAS <b>10.244.7.86</b> · UE2 <b>12.0.0.2</b>
+  </div>
 </footer>
 
-<!-- ═══════════════════════════════════════════════════════
-     SVG CALL FLOW RENDERER
-════════════════════════════════════════════════════════ -->
 <script>
 'use strict';
 
-/* ── colours ── */
-const C = {
-  register:'#b91c1c', invite:'#1e40af', trying:'#1a1a1a',
-  progress:'#b45309', ringing:'#b45309', ok:'#15803d',
-  auth:'#7f1d1d',     ack:'#5b21b6',    prack:'#5b21b6',
-  update:'#0f766e',   bye:'#7f1d1d',    cx:'#5b21b6',
-  annc:'#0f766e',
+/* ═══════════════════════════════════════════════════════════════════
+   SEQUENCE DIAGRAM RENDERER
+
+   Two SVGs per figure:
+     [data-axis] — the node header. Sticky under the nav, horizontally
+                   locked to the body's scroll position.
+     [data-body] — lifelines, messages, phase bands, callout notes.
+
+   Both are emitted at the SAME fixed pixel width, so a column centre
+   is at the same x in each. Nothing is percentage-sized and nothing
+   re-measures on resize, so the layout cannot shift while reading.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── geometry (px) ── */
+const M        = 22;   // outer margin
+const COL_W    = 128;  // column pitch
+const GUT_GAP  = 14;   // gap before the note gutter
+const GUT_W    = 220;  // right-hand callout gutter
+const ROW_H    = 46;   // message row
+const PHASE_H  = 38;   // phase band row
+const MEDIA_H  = 52;   // media (RTP) band row
+const HEAD_H   = 76;   // axis svg height
+const TOP_PAD  = 14;   // gap above the first row
+const BOX_W    = 116;  // node box
+const BOX_H    = 54;
+const AH       = 9;    // arrowhead length
+const NOTE_LH  = 13;   // callout line-height
+const NOTE_CH  = 5.5;  // approx px per char, 10px sans
+const LBL_CH   = 6.0;  // approx px per char, 10px mono
+
+/* ── message types: single source of truth for legend + line style.
+      `c` is filled in from the CSS tokens so both themes stay in sync. ── */
+const MSG = {
+  register: {legend:'REGISTER'},
+  auth:     {legend:'401 Unauthorized'},
+  invite:   {legend:'INVITE'},
+  trying:   {legend:'100 Trying'},
+  progress: {legend:'183 Session Progress'},
+  ringing:  {legend:'180 Ringing'},
+  ok:       {legend:'200 OK'},
+  prack:    {legend:'PRACK'},
+  update:   {legend:'UPDATE'},
+  bye:      {legend:'BYE'},
+  cx:       {dashed:true, legend:'Diameter Cx / Sh — UAR · MAR · SAR · LIR · UDR/UDA'},
+  rx:       {dashed:true, legend:'Diameter Rx — AAR/AAA · STR/STA'},
+  enum:     {dashed:true, legend:'ENUM / DNS — NAPTR'},
+  media:    {legend:'RTP media — dedicated bearer'},
 };
 
-/* ── layout constants ── */
-const COL_W  = 162;  // px per column
-const ROW_H  = 50;   // px per message row
-const NOTE_H = 30;   // px per note row
-const HDR_H  = 78;   // node header height
-const MARGIN = 26;   // left/right margin
-const AH_W   = 10;   // arrowhead width in pixels (userSpaceOnUse)
+/* ── surface + role colours, resolved from CSS custom properties.
+      SVG presentation attributes cannot read var(), so the renderer
+      resolves the active theme's tokens once per render pass. ── */
+const INK  = {};
+const ROLE = {};
 
-function colX(i){ return MARGIN + i * COL_W + COL_W / 2; }
+function readTheme(){
+  const cs = getComputedStyle(document.documentElement);
+  const t  = name => cs.getPropertyValue(name).trim();
 
-/* node colour map */
-const NODE_CLR = {
-  UE:'#1e40af', UE1:'#1e40af', UE2:'#1e40af',
-  PCSCF:'#b45309', ICSCF:'#0e7490', SCSCF:'#7c2d12',
-  TAS:'#be185d', HSS:'#5b21b6', ANNC:'#0f766e',
-};
+  INK.panel    = t('--svg-panel');
+  INK.box      = t('--svg-box');
+  INK.band     = t('--svg-band');
+  INK.line     = t('--svg-line');
+  INK.lifeline = t('--svg-lifeline');
+  INK.text     = t('--svg-text');
+  INK.text2    = t('--svg-text-2');
+  INK.text3    = t('--svg-text-3');
 
-/* ─────────────────────────────────────────────
-   makeSVG(svgId, colDefs, rows)
-   colDefs = [{id, label, sub, color}]
-   rows    = [{from, to, label, type, ts?}]
-            | {type:'note', label, color?}
-───────────────────────────────────────────── */
-function makeSVG(svgId, colDefs, rows) {
-  const svgEl = document.getElementById(svgId);
-  if (!svgEl) return;
+  ROLE.ue   = t('--r-ue');
+  ROLE.cscf = t('--r-cscf');
+  ROLE.aux  = t('--r-aux');
+  ROLE.peer = t('--r-peer');
 
-  const n = colDefs.length;
+  Object.keys(MSG).forEach(k => { MSG[k].c = t('--m-' + k); });
+}
 
-  let totalH = 0;
-  rows.forEach(r => totalH += (r.type === 'note') ? NOTE_H : ROW_H);
-  const W = n * COL_W + MARGIN * 2;
-  const H = HDR_H + totalH + 20;
+const esc = s => String(s)
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
-  svgEl.setAttribute('viewBox', `0 0 ${W} ${H}`);
-  svgEl.setAttribute('width', '100%');
-  svgEl.style.minWidth = W + 'px';
+const colX = i => M + i * COL_W + COL_W / 2;
 
-  /* arrowhead markers — userSpaceOnUse so pixel size is exact, refX="0"
-     puts the marker ORIGIN at the line endpoint; tip extends AH_W px
-     beyond endpoint, landing exactly on the destination lifeline         */
+/** Greedy word wrap to a character budget. */
+function wrap(text, maxChars){
+  const out = [];
+  let line = '';
+  for (const word of String(text).split(/\s+/)){
+    const next = line ? line + ' ' + word : word;
+    if (next.length > maxChars && line){ out.push(line); line = word; }
+    else { line = next; }
+  }
+  if (line) out.push(line);
+  return out;
+}
+
+/**
+ * @param {HTMLElement} fig  the <figure class="seq"> host
+ * @param {string}      uid  unique prefix for marker ids
+ * @param {Array}       cols [{label, sub, role}]
+ * @param {Array}       rows message | {kind:'phase'|'media'}
+ */
+function renderFlow(fig, uid, cols, rows){
+  const axisSvg = fig.querySelector('[data-axis] svg');
+  const bodySvg = fig.querySelector('[data-body] svg');
+  if (!axisSvg || !bodySvg) return;
+
+  const n    = cols.length;
+  const gutX = M + n * COL_W + GUT_GAP;
+  const W    = gutX + GUT_W + M;
+
+  /* ── pass 1: measure every row ── */
+  const laid = rows.map(r => {
+    if (r.kind === 'phase') return Object.assign({}, r, {h: PHASE_H});
+    if (r.kind === 'media') return Object.assign({}, r, {h: MEDIA_H});
+    const lines = r.note ? wrap(r.note, Math.floor((GUT_W - 22) / NOTE_CH)) : null;
+    const noteH = lines ? lines.length * NOTE_LH + 16 : 0;
+    return Object.assign({}, r, {lines, h: Math.max(ROW_H, noteH + 8)});
+  });
+
+  const H = TOP_PAD + laid.reduce((sum, r) => sum + r.h, 0) + 16;
+
+  /* ── axis: node boxes + lifeline stubs ── */
+  let head = '';
+  cols.forEach((col, i) => {
+    const cx  = colX(i);
+    const x   = cx - BOX_W / 2;
+    const clr = ROLE[col.role] || ROLE.cscf;
+    const peer = col.role === 'peer';
+
+    head += `<rect x="${x}" y="8" width="${BOX_W}" height="${BOX_H}" rx="4"
+        fill="${INK.box}" stroke="${peer ? clr : INK.line}" stroke-width="1"
+        ${peer ? 'stroke-dasharray="4 3"' : ''}/>`;
+    if (!peer){
+      head += `<rect x="${x}" y="8" width="${BOX_W}" height="2" rx="1" fill="${clr}"/>`;
+    }
+    head += `<text x="${cx}" y="34" text-anchor="middle"
+        font-size="${col.label.length > 9 ? 10.5 : 12.5}" font-weight="600"
+        letter-spacing="0.04em" fill="${INK.text}">${esc(col.label)}</text>
+      <text x="${cx}" y="50" text-anchor="middle"
+        font-size="9" fill="${INK.text3}">${esc(col.sub || '')}</text>
+      <line x1="${cx}" y1="${8 + BOX_H}" x2="${cx}" y2="${HEAD_H}"
+        stroke="${INK.lifeline}" stroke-width="1" stroke-dasharray="3 3"/>`;
+  });
+
+  axisSvg.setAttribute('viewBox', `0 0 ${W} ${HEAD_H}`);
+  axisSvg.setAttribute('width',  W);
+  axisSvg.setAttribute('height', HEAD_H);
+  axisSvg.innerHTML = head;
+
+  /* ── arrowhead markers, one per message colour ── */
+  const used = new Set(laid.map(r => r.type).filter(Boolean));
   let defs = '<defs>';
-  Object.entries(C).forEach(([k,v]) => {
-    defs += `<marker id="ah-${k}" markerWidth="${AH_W}" markerHeight="7"
-      refX="0" refY="3.5" orient="auto" markerUnits="userSpaceOnUse">
-      <path d="M0 0 L${AH_W} 3.5 L0 7 z" fill="${v}"/>
-    </marker>`;
+  used.forEach(t => {
+    const c = (MSG[t] || {}).c || INK.text3;
+    defs += `<marker id="${uid}-${t}" markerWidth="${AH}" markerHeight="7" refX="0" refY="3.5"
+        orient="auto" markerUnits="userSpaceOnUse">
+        <path d="M0 0 L${AH} 3.5 L0 7 z" fill="${c}"/></marker>`;
   });
   defs += '</defs>';
 
-  /* node boxes + lifelines */
-  let nodes = '';
-  colDefs.forEach((col, i) => {
-    const cx  = colX(i);
-    const clr = col.color || NODE_CLR[col.id] || '#5a5147';
-    const BW = 112, BH = 56;
-    const bx  = cx - BW / 2;
-    nodes += `
-      <rect x="${bx}" y="6" width="${BW}" height="${BH}" rx="2"
-        fill="${clr}"/>
-      <text x="${cx}" y="29" text-anchor="middle"
-        font-size="13" font-weight="700" fill="#fbf9f4">${col.label}</text>
-      <text x="${cx}" y="47" text-anchor="middle"
-        font-size="9" fill="#fbf9f4" opacity="0.75">${col.sub || ''}</text>
-      <line x1="${cx}" y1="${6 + BH}" x2="${cx}" y2="${H - 8}"
-        stroke="#1a1a1a" stroke-width="1" stroke-dasharray="3 3" opacity="0.4"/>`;
+  /* ── lifelines ── */
+  let lifelines = '';
+  cols.forEach((col, i) => {
+    const cx = colX(i);
+    lifelines += `<line x1="${cx}" y1="0" x2="${cx}" y2="${H - 8}"
+      stroke="${INK.lifeline}" stroke-width="1" stroke-dasharray="3 3"/>`;
   });
 
-  /* messages */
-  let msgs = '';
-  let y     = HDR_H;
+  /* ── pass 2: draw ── */
+  let body = '';
+  let y = TOP_PAD;
 
-  rows.forEach(row => {
-    if (row.type === 'note') {
-      const color = row.color || '#5a5147';
-      /* banner notes (── … ──) get a solid-stroke tinted band;
-         plain annotations get a dashed-stroke band with italic text */
-      const isBanner = String(row.label).trim().startsWith('─');
-      if (isBanner) {
-        msgs += `
-          <rect x="6" y="${y + 3}" width="${W - 12}" height="${NOTE_H - 6}" rx="2"
-            fill="${color}14" stroke="${color}" stroke-width="1.2"/>
-          <text x="${MARGIN + 10}" y="${y + NOTE_H / 2 + 4}"
-            font-size="10" font-weight="700" letter-spacing="1"
-            fill="${color}">${escXML(row.label)}</text>`;
-      } else {
-        msgs += `
-          <rect x="6" y="${y + 3}" width="${W - 12}" height="${NOTE_H - 6}" rx="2"
-            fill="${color}0d" stroke="${color}" stroke-width="1" stroke-dasharray="3 2"/>
-          <text x="${MARGIN + 10}" y="${y + NOTE_H / 2 + 4}"
-            font-size="10" font-style="italic"
-            fill="${color}">${escXML(row.label)}</text>`;
-      }
-      y += NOTE_H;
+  laid.forEach(row => {
+    /* phase band ───────────────────────────────── */
+    if (row.kind === 'phase'){
+      const top = y + 6, h = row.h - 12;
+      body += `<rect x="4" y="${top}" width="${W - 8}" height="${h}" rx="3"
+          fill="${INK.band}" stroke="${INK.line}" stroke-width="1"/>
+        <rect x="4" y="${top}" width="3" height="${h}" fill="${INK.text3}"/>
+        <text x="${M}" y="${top + h / 2 + 4}" font-size="10"
+          font-weight="600" letter-spacing="0.13em" fill="${INK.text2}"
+          >${esc(row.label.toUpperCase())}</text>`;
+      y += row.h;
       return;
     }
 
-    const fi = row.from, ti = row.to;
-    if (fi === undefined || ti === undefined) { y += ROW_H; return; }
-
-    const x1    = colX(fi);
-    const x2    = colX(ti);
-    const right = x2 > x1;
-    const clr   = C[row.type] || '#5a5147';
-
-    /* label sits in the TOP of the row; arrow in the LOWER portion */
-    const lblY = y + 6;            // label rect top
-    const ay   = y + ROW_H - 13;  // arrow y (lower ⅔ of row)
-
-    /* line: starts at source lifeline (x1), ends AH_W before target lifeline
-       so the arrowhead tip lands exactly on x2 (target lifeline center)   */
-    const lx1 = x1;
-    const lx2 = right ? x2 - AH_W : x2 + AH_W;
-
-    msgs += `<line x1="${lx1}" y1="${ay}" x2="${lx2}" y2="${ay}"
-      stroke="${clr}" stroke-width="2"
-      marker-end="url(#ah-${row.type})"/>`;
-
-    /* label box — paper background covers the dashed lifelines it passes
-       over, keeping labels readable; width capped at SVG bounds            */
-    const lbl  = escXML(row.label);
-    const lblW = Math.min(lbl.length * 6.4 + 18, W - 8);
-    const mid  = (x1 + x2) / 2;
-    const lblX = Math.max(4, Math.min(mid - lblW / 2, W - lblW - 4));
-
-    msgs += `
-      <rect x="${lblX}" y="${lblY}" width="${lblW}" height="17" rx="2"
-        fill="#fbf9f4"/>
-      <text x="${lblX + lblW / 2}" y="${lblY + 12}"
-        text-anchor="middle" font-size="10" font-weight="700"
-        fill="${clr}">${lbl}</text>`;
-
-    /* timestamp — outside the arrow on the destination side */
-    if (row.ts) {
-      const tsX    = right
-        ? Math.min(x2 + 5, W - 4)
-        : Math.max(x2 - 5, 4);
-      const anchor = right ? 'start' : 'end';
-      msgs += `<text x="${tsX}" y="${ay - 3}"
-        text-anchor="${anchor}" font-size="8" fill="#8a7f72">${row.ts}s</text>`;
+    /* media band (double-headed RTP arrow) ──────── */
+    if (row.kind === 'media'){
+      const c   = MSG.media.c;
+      const x1  = colX(row.from), x2 = colX(row.to);
+      const cy  = y + row.h / 2;
+      const bh  = 26;
+      body += `<rect x="${x1}" y="${cy - bh / 2}" width="${x2 - x1}" height="${bh}" rx="3"
+          fill="${c}14" stroke="${c}" stroke-width="1"/>
+        <path d="M${x1 + 3} ${cy} l10 -7 v14 z" fill="${c}"/>
+        <path d="M${x2 - 3} ${cy} l-10 -7 v14 z" fill="${c}"/>
+        <text x="${(x1 + x2) / 2}" y="${cy + 3.5}" text-anchor="middle"
+          font-size="10" font-weight="600"
+          letter-spacing="0.06em" fill="${c}">${esc(row.label)}</text>`;
+      y += row.h;
+      return;
     }
 
-    y += ROW_H;
+    /* message ───────────────────────────────────── */
+    const spec  = MSG[row.type] || {c: INK.text3};
+    const c     = spec.c;
+    const x1    = colX(row.from);
+    const x2    = colX(row.to);
+    const right = x2 > x1;
+    const ay    = y + row.h - 15;          // arrow baseline, lower part of row
+    const lx2   = right ? x2 - AH : x2 + AH;
+    const dash  = spec.dashed ? ' stroke-dasharray="6 4"' : '';
+
+    body += `<line x1="${x1}" y1="${ay}" x2="${lx2}" y2="${ay}"
+        stroke="${c}" stroke-width="1.6"${dash} marker-end="url(#${uid}-${row.type})"/>`;
+
+    /* label sits above the arrow on an opaque plate so lifelines stay hidden */
+    const lbl  = esc(row.label);
+    const lw   = Math.min(row.label.length * LBL_CH + 16, W - 8);
+    const lx   = Math.max(4, Math.min((x1 + x2) / 2 - lw / 2, W - lw - 4));
+    const ly   = ay - 20;
+    body += `<rect x="${lx}" y="${ly}" width="${lw}" height="17" rx="2" fill="${INK.panel}"/>
+      <text x="${lx + lw / 2}" y="${ly + 12.5}" text-anchor="middle"
+        font-size="10" font-weight="600"
+        fill="${c}">${lbl}</text>`;
+
+    /* optional timestamp, just past the destination lifeline */
+    if (row.ts){
+      const tx = right ? Math.min(x2 + 5, W - 4) : Math.max(x2 - 5, 4);
+      body += `<text x="${tx}" y="${ay - 4}" text-anchor="${right ? 'start' : 'end'}"
+        font-size="8" fill="${INK.text3}">${esc(row.ts)}s</text>`;
+    }
+
+    /* callout note in the right gutter — the figure's boxed annotations */
+    if (row.lines){
+      const nh = row.lines.length * NOTE_LH + 14;
+      const ny = y + (row.h - nh) / 2;
+      body += `<rect x="${gutX}" y="${ny}" width="${GUT_W}" height="${nh}" rx="3"
+          fill="${INK.box}" stroke="${INK.line}" stroke-width="1"/>
+        <rect x="${gutX}" y="${ny}" width="2" height="${nh}" fill="${c}"/>`;
+      row.lines.forEach((line, k) => {
+        body += `<text x="${gutX + 11}" y="${ny + 15 + k * NOTE_LH}"
+          class="note-t" font-size="10" fill="${INK.text2}">${esc(line)}</text>`;
+      });
+    }
+
+    y += row.h;
   });
 
-  svgEl.innerHTML = defs + `<g>${nodes}</g><g>${msgs}</g>`;
+  bodySvg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  bodySvg.setAttribute('width',  W);
+  bodySvg.setAttribute('height', H);
+  bodySvg.innerHTML = defs + lifelines + body;
 }
 
-function escXML(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-/* ════════════════════════════════════════════════
-   PHASE 01 — REGISTRATION
-   Cols: UE(0) PCSCF(1) ICSCF(2) SCSCF(3) TAS(4)
-════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════
+   01 — IMS REGISTRATION (precondition to the call flows)
+   Columns: UE 0 · P-CSCF 1 · I-CSCF 2 · S-CSCF 3 · HSS 4 · TAS 5
+   ═══════════════════════════════════════════════════════════════════ */
 const REG_COLS = [
-  {id:'UE',    label:'UE',     sub:'12.0.0.1 / .0.2'},
-  {id:'PCSCF', label:'P-CSCF', sub:'10.220.10.28'},
-  {id:'ICSCF', label:'I-CSCF', sub:'10.220.6.29'},
-  {id:'SCSCF', label:'S-CSCF', sub:'10.220.6.22'},
-  {id:'TAS',   label:'TAS',    sub:'10.244.7.86'},
+  {label:'UE',      sub:'12.0.0.1',     role:'ue'},
+  {label:'P-CSCF',  sub:'10.220.10.28', role:'cscf'},
+  {label:'I-CSCF',  sub:'10.220.6.29',  role:'cscf'},
+  {label:'S-CSCF',  sub:'10.220.6.22',  role:'cscf'},
+  {label:'HSS',     sub:'Diameter Cx',  role:'aux'},
+  {label:'TAS',     sub:'10.244.7.86',  role:'aux'},
 ];
+
 const REG_ROWS = [
-  {type:'note', label:'── First REGISTER attempt (CSeq:1) — auth challenge round ──', color:'#b91c1c'},
-  {from:0, to:1, label:'REGISTER (CSeq:1)', type:'register', ts:'0.001'},
-  {from:1, to:2, label:'REGISTER', type:'register'},
-  {type:'note', label:'   I-CSCF → HSS: UAR / UAA  (Diameter Cx) — HSS selects and assigns S-CSCF', color:'#5b21b6'},
-  {from:2, to:3, label:'REGISTER', type:'register'},
-  {type:'note', label:'   S-CSCF → HSS: MAR / MAA  (Diameter Cx) — S-CSCF gets auth vectors (AKA)', color:'#5b21b6'},
-  {from:3, to:2, label:'401 Unauthorized  (auth challenge)', type:'auth'},
-  {from:2, to:1, label:'401 Unauthorized', type:'auth'},
-  {from:1, to:0, label:'401 Unauthorized', type:'auth', ts:'0.009'},
-  {type:'note', label:'── Second REGISTER attempt (CSeq:2) — with computed credentials ──', color:'#b91c1c'},
-  {from:0, to:1, label:'REGISTER (CSeq:2, credentials)', type:'register', ts:'0.285'},
-  {from:1, to:2, label:'REGISTER', type:'register'},
-  {from:2, to:3, label:'REGISTER', type:'register'},
-  {type:'note', label:'   S-CSCF → HSS: SAR / SAA  (Diameter Cx) — S-CSCF gets user profile + iFC list', color:'#5b21b6'},
-  {type:'note', label:'   S-CSCF checks iFC → TAS entry found → send 3rd-party REGISTER to TAS', color:'#7c2d12'},
-  {from:3, to:4, label:'REGISTER  (3rd-party iFC trigger)', type:'register', ts:'0.287'},
-  {from:4, to:3, label:'200 OK', type:'ok'},
-  {from:3, to:2, label:'200 OK', type:'ok'},
-  {from:2, to:1, label:'200 OK  + Service-Route header', type:'ok'},
-  {from:1, to:0, label:'200 OK  (Registered!)', type:'ok', ts:'0.291'},
+  {kind:'phase', label:'First REGISTER (CSeq 1) — authentication challenge'},
+  {from:0, to:1, type:'register', label:'REGISTER', ts:'0.001'},
+  {from:1, to:2, type:'register', label:'REGISTER'},
+  {from:2, to:4, type:'cx', label:'UAR', note:'HSS selects and assigns an S-CSCF for this subscriber'},
+  {from:4, to:2, type:'cx', label:'UAA'},
+  {from:2, to:3, type:'register', label:'REGISTER'},
+  {from:3, to:4, type:'cx', label:'MAR', note:'S-CSCF fetches the AKA authentication vectors'},
+  {from:4, to:3, type:'cx', label:'MAA'},
+  {from:3, to:2, type:'auth', label:'401 Unauthorized'},
+  {from:2, to:1, type:'auth', label:'401 Unauthorized'},
+  {from:1, to:0, type:'auth', label:'401 Unauthorized', ts:'0.009'},
+
+  {kind:'phase', label:'Second REGISTER (CSeq 2) — with computed credentials'},
+  {from:0, to:1, type:'register', label:'REGISTER', ts:'0.285'},
+  {from:1, to:2, type:'register', label:'REGISTER'},
+  {from:2, to:4, type:'cx', label:'UAR'},
+  {from:4, to:2, type:'cx', label:'UAA'},
+  {from:2, to:3, type:'register', label:'REGISTER'},
+  {from:3, to:4, type:'cx', label:'SAR', note:'S-CSCF downloads the user profile and the iFC list'},
+  {from:4, to:3, type:'cx', label:'SAA'},
+  {from:3, to:5, type:'register', label:'REGISTER', note:'3rd-party REGISTER — triggered by the iFC match on TAS', ts:'0.287'},
+  {from:5, to:3, type:'ok', label:'200 OK'},
+  {from:3, to:2, type:'ok', label:'200 OK'},
+  {from:2, to:1, type:'ok', label:'200 OK', note:'P-CSCF stores the Service-Route — later INVITEs go straight to S-CSCF'},
+  {from:1, to:0, type:'ok', label:'200 OK', ts:'0.291'},
 ];
 
-/* ════════════════════════════════════════════════
-   PHASE 02 — CALL SETUP
-   Cols: UE1(0) PCSCF(1) SCSCF(2) TAS(3) ICSCF(4) UE2(5)
-════════════════════════════════════════════════ */
-const SETUP_COLS = [
-  {id:'UE1',   label:'UE1',    sub:'12.0.0.1'},
-  {id:'PCSCF', label:'P-CSCF', sub:'10.220.10.28'},
-  {id:'SCSCF', label:'S-CSCF', sub:'10.220.6.22'},
-  {id:'TAS',   label:'TAS',    sub:'10.244.7.86'},
-  {id:'ICSCF', label:'I-CSCF', sub:'10.220.6.29'},
-  {id:'UE2',   label:'UE2',    sub:'12.0.0.2'},
-];
-const SETUP_ROWS = [
-  {type:'note', label:'── Originating side: UE1 initiates call ──', color:'#1e40af'},
-  {from:0, to:1, label:'INVITE +919952000068  (CSeq:17, SDP offer)', type:'invite', ts:'27.12'},
-  {type:'note', label:'   P-CSCF uses Service-Route → routes directly to S-CSCF (I-CSCF bypassed on INVITE path)'},
-  {from:1, to:2, label:'INVITE', type:'invite'},
-  {type:'note', label:'   S-CSCF checks UE1 originating iFC → TAS matched → apply originating service', color:'#7c2d12'},
-  {from:2, to:3, label:'INVITE  [orig iFC trigger]', type:'invite', ts:'27.12'},
-  {type:'note', label:'   TAS: call barring · ODB · CLIR · prepaid balance check · call recording trigger…', color:'#be185d'},
-  {from:3, to:2, label:'INVITE  [orig service done → back to S-CSCF]', type:'invite', ts:'27.16'},
-  {type:'note', label:'   ✓ TAS → S-CSCF  (NOT I-CSCF)  — confirmed in Wireshark frame 268', color:'#b91c1c'},
-  {type:'note', label:'── Terminating routing: S-CSCF → I-CSCF → HSS LIR for UE2 ──', color:'#b45309'},
-  {from:2, to:4, label:'INVITE  [term routing → I-CSCF LIR]', type:'invite'},
-  {type:'note', label:'   I-CSCF → HSS: LIR / LIA  (Diameter Cx) — "Which S-CSCF serves +919952000068?"', color:'#5b21b6'},
-  {from:4, to:2, label:'INVITE  [LIA: UE2 S-CSCF found]', type:'invite', ts:'27.16'},
-  {type:'note', label:'   S-CSCF checks UE2 terminating iFC → TAS matched → apply terminating service', color:'#7c2d12'},
-  {from:2, to:3, label:'INVITE  [term iFC trigger]', type:'invite', ts:'27.16'},
-  {type:'note', label:'   TAS: call divert · call waiting · barring (MT) · PRBT flag · VoLTE check…', color:'#be185d'},
-  {from:3, to:2, label:'INVITE  [term service done → back to S-CSCF]', type:'invite', ts:'27.20'},
-  {type:'note', label:'── S-CSCF → P-CSCF → UE2 delivery ──', color:'#1e40af'},
-  {from:2, to:1, label:'INVITE', type:'invite'},
-  {from:1, to:5, label:'INVITE  (CSeq:17)', type:'invite', ts:'27.21'},
-  {type:'note', label:'   Each intermediate hop sends 100 Trying immediately (hop-by-hop, not end-to-end)'},
-  {from:5, to:1, label:'100 Trying', type:'trying'},
-  {from:1, to:0, label:'100 Trying', type:'trying', ts:'27.12'},
+/* ═══════════════════════════════════════════════════════════════════
+   02 — VoLTE CALL, ORIGINATING SIDE — §8.2 Fig. 33
+   Columns: UE1 0 · PCRF 1 · P-CSCF 2 · IMS-ENUM+NPS 3 ·
+            S-CSCF 4 · HSS 5 · TAS 6 · terminating network 7
+   ═══════════════════════════════════════════════════════════════════ */
+const ORIG_COLS = [
+  {label:'UE1',          sub:'12.0.0.1',      role:'ue'},
+  {label:'PCRF',         sub:'Diameter Rx',   role:'aux'},
+  {label:'P-CSCF',       sub:'10.220.10.28',  role:'cscf'},
+  {label:'IMS-ENUM+NPS', sub:'NAPTR / lrn',   role:'aux'},
+  {label:'S-CSCF',       sub:'10.220.6.22',   role:'cscf'},
+  {label:'HSS',          sub:'Diameter Sh',   role:'aux'},
+  {label:'TAS',          sub:'10.244.7.86',   role:'aux'},
+  {label:'TERM SIDE',    sub:'toward UE2',    role:'peer'},
 ];
 
-/* ════════════════════════════════════════════════
-   PHASE 03 — SESSION PROGRESS
-   Cols: UE1(0) PCSCF(1) SCSCF(2) TAS(3) UE2(4)
-════════════════════════════════════════════════ */
-const PROG_COLS = [
-  {id:'UE1',   label:'UE1',    sub:'12.0.0.1'},
-  {id:'PCSCF', label:'P-CSCF', sub:'10.220.10.28'},
-  {id:'SCSCF', label:'S-CSCF', sub:'10.220.6.22'},
-  {id:'TAS',   label:'TAS',    sub:'10.244.7.86'},
-  {id:'UE2',   label:'UE2',    sub:'12.0.0.2'},
-];
-const PROG_ROWS = [
-  {type:'note', label:'── 183 Session Progress (early SDP answer) — via Record-Route path ──', color:'#b45309'},
-  {from:4, to:1, label:'183 Session Progress  (SDP answer)', type:'progress', ts:'27.40'},
-  {from:1, to:2, label:'183', type:'progress'},
-  {from:2, to:3, label:'183', type:'progress'},
-  {from:3, to:2, label:'183', type:'progress'},
-  {from:2, to:1, label:'183', type:'progress'},
-  {from:1, to:0, label:'183 Session Progress', type:'progress', ts:'27.43'},
-  {type:'note', label:'   TAS → ANNC Server (10.220.10.30): INVITE  [starts ringback tone "tring tring" for UE1]', color:'#0f766e'},
-  {type:'note', label:'── PRACK (RFC 3262) — UE1 acknowledges reliable 183 ──', color:'#5b21b6'},
-  {from:0, to:1, label:'PRACK  (CSeq:18)', type:'prack', ts:'27.48'},
-  {from:1, to:2, label:'PRACK', type:'prack'},
-  {from:2, to:3, label:'PRACK', type:'prack'},
-  {from:3, to:2, label:'PRACK', type:'prack'},
-  {from:2, to:1, label:'PRACK', type:'prack'},
-  {from:1, to:4, label:'PRACK', type:'prack'},
-  {from:4, to:1, label:'200 OK  (PRACK)', type:'ok', ts:'27.56'},
-  {from:1, to:2, label:'200 OK', type:'ok'},
-  {from:2, to:3, label:'200 OK', type:'ok'},
-  {from:3, to:2, label:'200 OK', type:'ok'},
-  {from:2, to:1, label:'200 OK', type:'ok'},
-  {from:1, to:0, label:'200 OK  (PRACK)', type:'ok'},
-  {type:'note', label:'── UPDATE (CSeq:19) — finalize SDP: lock codecs and RTP media ports ──', color:'#0f766e'},
-  {from:0, to:1, label:'UPDATE  (CSeq:19, SDP offer)', type:'update', ts:'27.64'},
-  {from:1, to:2, label:'UPDATE', type:'update'},
-  {from:2, to:3, label:'UPDATE', type:'update'},
-  {from:3, to:2, label:'UPDATE', type:'update'},
-  {from:2, to:1, label:'UPDATE', type:'update'},
-  {from:1, to:4, label:'UPDATE', type:'update'},
-  {from:4, to:1, label:'200 OK  (UPDATE)', type:'ok'},
-  {from:1, to:2, label:'200 OK', type:'ok'},
-  {from:2, to:3, label:'200 OK', type:'ok'},
-  {from:3, to:2, label:'200 OK', type:'ok'},
-  {from:2, to:1, label:'200 OK', type:'ok'},
-  {from:1, to:0, label:'200 OK  (UPDATE)', type:'ok', ts:'27.77'},
-  {type:'note', label:'── 180 Ringing — UE2 ka phone officially baj raha hai ──', color:'#b45309'},
-  {from:4, to:1, label:'180 Ringing', type:'ringing', ts:'27.80'},
-  {from:1, to:2, label:'180 Ringing', type:'ringing'},
-  {from:2, to:3, label:'180 Ringing', type:'ringing'},
-  {from:3, to:2, label:'180 Ringing', type:'ringing'},
-  {from:2, to:1, label:'180 Ringing', type:'ringing'},
-  {from:1, to:0, label:'180 Ringing', type:'ringing'},
+const ORIG_ROWS = [
+  {kind:'phase', label:'INVITE — UE1 dials UE2, originating iFC routes to TAS'},
+  {from:0, to:2, type:'invite', label:'INVITE UE2'},
+  {from:2, to:0, type:'trying', label:'100 Trying'},
+  {from:2, to:4, type:'invite', label:'INVITE UE2'},
+  {from:4, to:6, type:'invite', label:'INVITE UE2'},
+  {from:4, to:2, type:'trying', label:'100 Trying'},
+  {from:6, to:4, type:'trying', label:'100 Trying'},
+  {from:6, to:4, type:'invite', label:'INVITE UE2',
+    note:'After checking UE status and originating features, TAS sends INVITE to S-CSCF'},
+  {from:4, to:6, type:'trying', label:'100 Trying'},
+  {from:6, to:5, type:'cx', label:'UDR', note:'Get Location-Info'},
+  {from:5, to:6, type:'cx', label:'UDA', note:'Will get MME/SGSN name, Cell-id'},
+
+  {kind:'phase', label:'ENUM / NPS — called-party home network discovery'},
+  {from:4, to:3, type:'enum', label:'NAPTR Query'},
+  {from:3, to:4, type:'enum', label:'NAPTR Response', note:'Subscriber domain returned'},
+  {from:4, to:7, type:'invite', label:'INVITE UE2', note:'Routing on lrn / domain'},
+
+  {kind:'phase', label:'183 Session Progress — SDP answer, dedicated bearer setup'},
+  {from:7, to:4, type:'progress', label:'183, Session Progress'},
+  {from:4, to:6, type:'progress', label:'183, Session Progress'},
+  {from:6, to:4, type:'progress', label:'183, Session Progress'},
+  {from:4, to:2, type:'progress', label:'183, Session Progress'},
+  {from:2, to:1, type:'rx', label:'AAR',
+    note:'P-CSCF analyses the SDP — IP address, port numbers, media-type'},
+  {from:1, to:2, type:'rx', label:'AAA', note:'PCRF authorizes the request and triggers voice bearer creation'},
+  {from:2, to:0, type:'progress', label:'183, Session Progress'},
+
+  {kind:'phase', label:'PRACK — UE1 acknowledges the reliable 183'},
+  {from:0, to:2, type:'prack', label:'SIP Prack'},
+  {from:2, to:4, type:'prack', label:'SIP Prack'},
+  {from:4, to:6, type:'prack', label:'SIP Prack'},
+  {from:6, to:4, type:'prack', label:'SIP Prack'},
+  {from:4, to:7, type:'prack', label:'SIP Prack'},
+  {from:7, to:4, type:'ok', label:'200 OK(prack)'},
+  {from:4, to:6, type:'ok', label:'200 OK(prack)'},
+  {from:6, to:4, type:'ok', label:'200 OK(prack)'},
+  {from:4, to:2, type:'ok', label:'200 OK(prack)'},
+  {from:2, to:0, type:'ok', label:'200'},
+
+  {kind:'phase', label:'UPDATE — final SDP, codec and RTP port lock'},
+  {from:0, to:2, type:'update', label:'SIP UPDATE'},
+  {from:2, to:4, type:'update', label:'SIP'},
+  {from:4, to:6, type:'update', label:'SIP UPDATE'},
+  {from:6, to:4, type:'update', label:'SIP UPDATE'},
+  {from:4, to:7, type:'update', label:'SIP UPDATE'},
+  {from:7, to:4, type:'ok', label:'200 OK(update)'},
+  {from:4, to:6, type:'ok', label:'200 OK(update)'},
+  {from:6, to:4, type:'ok', label:'200 OK(update)'},
+  {from:4, to:2, type:'ok', label:'200 OK(update)'},
+  {from:2, to:1, type:'rx', label:'AAR', note:'Second AAR-AAA round on the UPDATE answer'},
+  {from:1, to:2, type:'rx', label:'AAA'},
+  {from:2, to:0, type:'ok', label:'200 OK(update)'},
+
+  {kind:'phase', label:'180 Ringing → subscriber answers'},
+  {from:7, to:4, type:'ringing', label:'180 Ringing'},
+  {from:4, to:6, type:'ringing', label:'180 Ringing'},
+  {from:6, to:4, type:'ringing', label:'180 Ringing'},
+  {from:4, to:2, type:'ringing', label:'180 Ringing'},
+  {from:2, to:0, type:'ringing', label:'180'},
+  {from:7, to:4, type:'ok', label:'200 OK', note:'Subscriber answers the call'},
+  {from:4, to:6, type:'ok', label:'200 OK'},
+  {from:6, to:4, type:'ok', label:'200 OK'},
+  {from:4, to:2, type:'ok', label:'200 OK'},
+  {from:2, to:0, type:'ok', label:'200 OK'},
+  {kind:'media', from:0, to:7,
+    label:'VoLTE voice traffic over RTP via dedicated bearer and IMS media plane'},
+
+  {kind:'phase', label:'BYE — UE1 hangs up, bearer released'},
+  {from:0, to:2, type:'bye', label:'BYE'},
+  {from:2, to:4, type:'bye', label:'BYE'},
+  {from:4, to:6, type:'bye', label:'BYE'},
+  {from:6, to:5, type:'cx', label:'UDR', note:'Query for Location-Information'},
+  {from:5, to:6, type:'cx', label:'UDA', note:'Will get MME/SGSN name, Cell-id'},
+  {from:6, to:4, type:'bye', label:'BYE'},
+  {from:4, to:7, type:'bye', label:'BYE'},
+  {from:7, to:4, type:'ok', label:'200 OK'},
+  {from:4, to:6, type:'ok', label:'200 OK'},
+  {from:6, to:4, type:'ok', label:'200 OK'},
+  {from:4, to:2, type:'ok', label:'200 OK'},
+  {from:2, to:1, type:'rx', label:'STR', note:'Voice bearer released'},
+  {from:1, to:2, type:'rx', label:'STA'},
+  {from:2, to:0, type:'ok', label:'200 OK'},
 ];
 
-/* ════════════════════════════════════════════════
-   PHASE 04 — CALL ANSWER
-════════════════════════════════════════════════ */
-const ANS_ROWS = [
-  {type:'note', label:'── UE2 picks up (t≈36.96s) → 200 OK flows back via Record-Route ──', color:'#15803d'},
-  {from:4, to:1, label:'200 OK  (INVITE, CSeq:17)', type:'ok', ts:'36.96'},
-  {from:1, to:2, label:'200 OK', type:'ok'},
-  {from:2, to:3, label:'200 OK', type:'ok'},
-  {from:3, to:2, label:'200 OK', type:'ok'},
-  {from:2, to:1, label:'200 OK', type:'ok'},
-  {from:1, to:0, label:'200 OK  (INVITE)', type:'ok', ts:'36.99'},
-  {type:'note', label:'   TAS → ANNC Server (10.220.10.30): BYE  [stop ringback — call is being answered!]', color:'#0f766e'},
-  {type:'note', label:'── UE1 sends ACK → three-way handshake complete ──', color:'#5b21b6'},
-  {from:0, to:1, label:'ACK  (CSeq:17)', type:'ack', ts:'37.04'},
-  {from:1, to:2, label:'ACK', type:'ack'},
-  {from:2, to:3, label:'ACK', type:'ack'},
-  {from:3, to:2, label:'ACK', type:'ack'},
-  {from:2, to:1, label:'ACK', type:'ack'},
-  {from:1, to:4, label:'ACK', type:'ack', ts:'37.07'},
-  {type:'note', label:'   ✓ CALL ESTABLISHED — RTP voice/video flows directly UE1 ↔ UE2 (dedicated bearer, IMS-DP)', color:'#15803d'},
+/* ═══════════════════════════════════════════════════════════════════
+   03 — VoLTE CALL, TERMINATING SIDE — §8.4 Fig. 35
+   Columns: UE2 0 · PCRF 1 · P-CSCF 2 · I-CSCF 3 ·
+            S-CSCF 4 · HSS 5 · TAS 6 · originating network 7
+   ═══════════════════════════════════════════════════════════════════ */
+const TERM_COLS = [
+  {label:'UE2',        sub:'12.0.0.2',       role:'ue'},
+  {label:'PCRF',       sub:'Diameter Rx',    role:'aux'},
+  {label:'P-CSCF',     sub:'10.244.9.108',   role:'cscf'},
+  {label:'I-CSCF',     sub:'10.220.6.29',    role:'cscf'},
+  {label:'S-CSCF',     sub:'10.220.6.22',    role:'cscf'},
+  {label:'HSS',        sub:'Cx / Sh',        role:'aux'},
+  {label:'TAS',        sub:'10.244.7.86',    role:'aux'},
+  {label:'ORIG SIDE',  sub:'from UE1',       role:'peer'},
 ];
 
-/* ════════════════════════════════════════════════
-   PHASE 05 — TEARDOWN
-════════════════════════════════════════════════ */
-const BYE_ROWS = [
-  {type:'note', label:'── UE2 initiates BYE (t≈45.52s) — UE2 leg teardown ──', color:'#b91c1c'},
-  {from:4, to:1, label:'BYE', type:'bye', ts:'45.52'},
-  {from:1, to:2, label:'BYE', type:'bye'},
-  {from:2, to:3, label:'BYE', type:'bye'},
-  {from:3, to:2, label:'200 OK  (BYE — UE2 leg closed)', type:'ok'},
-  {from:2, to:1, label:'200 OK', type:'ok'},
-  {from:1, to:4, label:'200 OK', type:'ok', ts:'45.52'},
-  {type:'note', label:'── TAS holds UE1 leg separately → must also send BYE to UE1 (B2BUA behaviour) ──', color:'#b91c1c'},
-  {from:3, to:2, label:'BYE  (UE1 dialog — from TAS)', type:'bye', ts:'45.55'},
-  {from:2, to:1, label:'BYE', type:'bye'},
-  {from:1, to:0, label:'BYE', type:'bye', ts:'45.55'},
-  {from:0, to:1, label:'200 OK', type:'ok', ts:'45.59'},
-  {from:1, to:2, label:'200 OK', type:'ok'},
-  {from:2, to:3, label:'200 OK  (UE1 leg closed)', type:'ok'},
-  {type:'note', label:'   All dialogs closed. PCRF bearer released. CDF generates CDR (duration, parties, media).', color:'#15803d'},
+const TERM_ROWS = [
+  {kind:'phase', label:'INVITE arrives at the terminating I-CSCF'},
+  {from:7, to:3, type:'invite', label:'INVITE UE2', note:'From Originating Side'},
+  {from:3, to:7, type:'trying', label:'100 Trying'},
+  {from:3, to:5, type:'cx', label:'LIR', note:'Which S-CSCF serves UE2?'},
+  {from:5, to:3, type:'cx', label:'LIA', note:'S-CSCF address returned'},
+  {from:3, to:4, type:'invite', label:'INVITE UE2'},
+  {from:4, to:6, type:'invite', label:'INVITE UE2'},
+  {from:4, to:3, type:'trying', label:'100 Trying'},
+  {from:6, to:4, type:'trying', label:'100 Trying'},
+
+  {kind:'phase', label:'TAS ↔ HSS (Sh) — TADS, UserState, Location'},
+  {from:6, to:5, type:'cx', label:'UDR', note:'Query for TADS'},
+  {from:5, to:6, type:'cx', label:'UDA', note:'TADS = 1, user in 4G'},
+  {from:6, to:5, type:'cx', label:'UDR', note:'Query for UserState'},
+  {from:5, to:6, type:'cx', label:'UDA', note:'User reachable in 4G'},
+  {from:6, to:5, type:'cx', label:'UDR', note:'Get Location-Info'},
+  {from:5, to:6, type:'cx', label:'UDA', note:'Will get MME/SGSN name, Cell-id'},
+
+  {kind:'phase', label:'INVITE delivered to UE2'},
+  {from:6, to:4, type:'invite', label:'INVITE UE2',
+    note:'TAS applies the terminating features and returns the INVITE to S-CSCF'},
+  {from:4, to:2, type:'invite', label:'INVITE UE2'},
+  {from:2, to:0, type:'invite', label:'INVITE UE2'},
+  {from:0, to:2, type:'trying', label:'100 Trying'},
+  {from:2, to:4, type:'trying', label:'100 Trying'},
+  {from:4, to:6, type:'trying', label:'100 Trying'},
+
+  {kind:'phase', label:'183 Session Progress — SDP answer, dedicated bearer setup'},
+  {from:0, to:2, type:'progress', label:'183, Session Progress'},
+  {from:2, to:1, type:'rx', label:'AAR', note:'P-CSCF analyses the SDP and requests the voice bearer'},
+  {from:1, to:2, type:'rx', label:'AAA'},
+  {from:2, to:4, type:'progress', label:'183, Session Progress'},
+  {from:4, to:6, type:'progress', label:'183, Session Progress'},
+  {from:6, to:4, type:'progress', label:'183, Session Progress'},
+  {from:4, to:3, type:'progress', label:'183, Session Progress'},
+  {from:3, to:7, type:'progress', label:'183, Session Progress'},
+
+  {kind:'phase', label:'PRACK from the originating side'},
+  {from:7, to:4, type:'prack', label:'SIP Prack'},
+  {from:4, to:6, type:'prack', label:'SIP Prack'},
+  {from:6, to:4, type:'prack', label:'SIP Prack'},
+  {from:4, to:2, type:'prack', label:'SIP Prack'},
+  {from:2, to:0, type:'prack', label:'SIP'},
+  {from:0, to:2, type:'ok', label:'200 OK(prack)'},
+  {from:2, to:4, type:'ok', label:'200'},
+  {from:4, to:6, type:'ok', label:'200 OK(prack)'},
+  {from:6, to:4, type:'ok', label:'200 OK(prack)'},
+  {from:4, to:7, type:'ok', label:'200 OK(prack)'},
+
+  {kind:'phase', label:'UPDATE from the originating side'},
+  {from:7, to:4, type:'update', label:'SIP UPDATE'},
+  {from:4, to:6, type:'update', label:'SIP UPDATE'},
+  {from:6, to:4, type:'update', label:'SIP UPDATE'},
+  {from:4, to:2, type:'update', label:'SIP UPDATE'},
+  {from:2, to:0, type:'update', label:'SIP'},
+  {from:0, to:2, type:'ok', label:'200 OK(update)'},
+  {from:2, to:4, type:'ok', label:'200 OK(update)'},
+  {from:2, to:1, type:'rx', label:'AAR', note:'Second AAR-AAA round on the UPDATE answer'},
+  {from:1, to:2, type:'rx', label:'AAA'},
+  {from:4, to:6, type:'ok', label:'200 OK(update)'},
+  {from:6, to:4, type:'ok', label:'200 OK(update)'},
+  {from:4, to:7, type:'ok', label:'200 OK(update)'},
+
+  {kind:'phase', label:'180 Ringing → subscriber answers'},
+  {from:0, to:2, type:'ringing', label:'180 Ringing'},
+  {from:2, to:4, type:'ringing', label:'180'},
+  {from:4, to:6, type:'ringing', label:'180 Ringing'},
+  {from:6, to:4, type:'ringing', label:'180 Ringing'},
+  {from:4, to:3, type:'ringing', label:'180 Ringing'},
+  {from:3, to:7, type:'ringing', label:'180 Ringing'},
+  {from:0, to:2, type:'ok', label:'200 OK', note:'Subscriber answers the call'},
+  {from:2, to:4, type:'ok', label:'200 OK'},
+  {from:4, to:6, type:'ok', label:'200 OK'},
+  {from:6, to:4, type:'ok', label:'200 OK'},
+  {from:4, to:3, type:'ok', label:'200 OK'},
+  {from:3, to:7, type:'ok', label:'200 OK'},
+  {kind:'media', from:0, to:7,
+    label:'VoLTE voice traffic over RTP via dedicated bearer and IMS media plane'},
+
+  {kind:'phase', label:'BYE from the originating side'},
+  {from:7, to:4, type:'bye', label:'BYE'},
+  {from:4, to:6, type:'bye', label:'BYE'},
+  {from:6, to:5, type:'cx', label:'UDR', note:'Get Location-Info'},
+  {from:5, to:6, type:'cx', label:'UDA', note:'Will get MME/SGSN name, Cell-id'},
+  {from:6, to:4, type:'bye', label:'BYE'},
+  {from:4, to:2, type:'bye', label:'BYE'},
+  {from:2, to:0, type:'bye', label:'BYE'},
+  {from:0, to:2, type:'ok', label:'200 OK'},
+  {from:2, to:1, type:'rx', label:'STR', note:'Voice bearer released'},
+  {from:1, to:2, type:'rx', label:'STA'},
+  {from:2, to:4, type:'ok', label:'200 OK'},
+  {from:4, to:6, type:'ok', label:'200 OK'},
+  {from:6, to:4, type:'ok', label:'200 OK'},
+  {from:4, to:7, type:'ok', label:'200 OK'},
 ];
 
-/* ── render all ── */
-makeSVG('svg-reg',   REG_COLS,   REG_ROWS);
-makeSVG('svg-setup', SETUP_COLS, SETUP_ROWS);
-makeSVG('svg-prog',  PROG_COLS,  PROG_ROWS);
-makeSVG('svg-ans',   PROG_COLS,  ANS_ROWS);   /* same 5-col layout */
-makeSVG('svg-bye',   PROG_COLS,  BYE_ROWS);
+/* ═══════════════════════════════════════════════════════════════════
+   BOOT
+   ═══════════════════════════════════════════════════════════════════ */
+const FLOWS = {
+  reg:  {cols: REG_COLS,  rows: REG_ROWS},
+  orig: {cols: ORIG_COLS, rows: ORIG_ROWS},
+  term: {cols: TERM_COLS, rows: TERM_ROWS},
+};
+
+/* legend — derived from MSG so colours can never drift out of sync */
+function buildLegend(){
+  const host = document.querySelector('[data-legend]');
+  if (!host) return;
+  const seen = new Set();
+  host.innerHTML = Object.values(MSG).filter(m => {
+    if (seen.has(m.legend)) return false;
+    seen.add(m.legend);
+    return true;
+  }).map(m => `<span class="legend__item">
+      <i class="legend__swatch" style="color:${m.c}"${m.dashed ? ' data-dashed' : ''}></i>
+      ${esc(m.legend)}</span>`).join('');
+}
+
+/* One render pass. Re-run on theme change — the geometry is identical,
+   so nothing moves; only the resolved colours differ. */
+function renderAll(){
+  readTheme();
+  document.querySelectorAll('[data-flow]').forEach(fig => {
+    const def = FLOWS[fig.dataset.flow];
+    if (def) renderFlow(fig, fig.dataset.flow, def.cols, def.rows);
+  });
+  buildLegend();
+}
+
+renderAll();
+
+/* ── theme toggle ── */
+(function themeToggle(){
+  const btn = document.querySelector('[data-theme-toggle]');
+  if (!btn) return;
+
+  const current = () => document.documentElement.getAttribute('data-theme') || 'dark';
+  const apply = mode => {
+    document.documentElement.setAttribute('data-theme', mode);
+    btn.setAttribute('aria-pressed', String(mode === 'light'));
+    try { localStorage.setItem('ims-theme', mode); } catch (e) {}
+    renderAll();
+  };
+
+  btn.setAttribute('aria-pressed', String(current() === 'light'));
+  btn.addEventListener('click', () => apply(current() === 'light' ? 'dark' : 'light'));
+})();
+
+/* keep the sticky node headers parked directly under the nav */
+const nav = document.querySelector('.tabs');
+const syncNavHeight = () =>
+  document.documentElement.style.setProperty('--nav-h', nav.offsetHeight + 'px');
+syncNavHeight();
+addEventListener('resize', syncNavHeight, {passive:true});
+
+/* mirror horizontal scroll from the diagram body onto its anchored header */
+document.querySelectorAll('.seq').forEach(fig => {
+  const body = fig.querySelector('[data-body]');
+  const axis = fig.querySelector('[data-axis]');
+  if (!body || !axis) return;
+  body.addEventListener('scroll', () => { axis.scrollLeft = body.scrollLeft; }, {passive:true});
+});
+
+/* highlight the section currently in view — colour only, no layout change */
+(function trackNav(){
+  const links = [...document.querySelectorAll('.tabs a')];
+  const targets = links
+    .map(a => document.querySelector(a.getAttribute('href')))
+    .filter(Boolean);
+  if (!targets.length || !('IntersectionObserver' in window)) return;
+
+  const visible = new Set();
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => e.isIntersecting ? visible.add(e.target) : visible.delete(e.target));
+    const first = targets.find(t => visible.has(t));
+    links.forEach(a =>
+      a.setAttribute('aria-current', String(first && a.getAttribute('href') === '#' + first.id)));
+  }, {rootMargin: '-25% 0px -60% 0px'});
+
+  targets.forEach(t => io.observe(t));
+})();
 </script>
 </body>
 </html>
